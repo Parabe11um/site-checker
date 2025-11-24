@@ -22,6 +22,7 @@ html/
 nginx/
 Dockerfile
 docker-compose.yml
+sitechecker/settings.py
 
 # ---- VSCode / PyCharm ----
 .idea/
