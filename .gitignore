@@ -1,0 +1,39 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+
+# ---- Environment ----
+.env
+.env.*
+venv/
+env/
+*.env
+*.bak
+
+# ---- Django ----
+media/
+staticfiles/
+html/
+nginx/
+Dockerfile
+docker-compose.yml
+
+# ---- VSCode / PyCharm ----
+.idea/
+.vscode/
+
+# ---- Docker ----
+# исключаем локальные артефакты, но оставляем конфиги
+**/tmp/
+**/__pycache__/
+*.pid
+*.sock
+
+# ---- OS Files ----
+.DS_Store
+Thumbs.db
