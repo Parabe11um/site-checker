@@ -11,7 +11,7 @@ import pytz
 
 def check_website(website: Website, timeout: float = 10.0) -> Website:
     """
-    Основной мониторинг сайта + SSL + скриншот.
+    Основной мониторинг сайта + SSL.
     """
 
     status_code = None
@@ -35,6 +35,7 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
 
     except RequestException as e:
         error_text = str(e)
+        status_code = 0  # Сайт недоступен
 
     # ---- Telegram уведомления ----
     from sitechecker.telegram import send_telegram
@@ -42,30 +43,23 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
     prev_status = website.last_status_code
     current_status = status_code
 
-    # Если статуса нет (первый запуск) — считаем, что был 200 для логики сравнения
-    if prev_status is None:
-        prev_status = 200
+    # Если сайт раньше был OK → а теперь нет
+    if prev_status == 200 and current_status != 200:
+        send_telegram(
+            f"⚠️ <b>Проблема с сайтом</b>\n"
+            f"{website.name}\n"
+            f"{website.url}\n\n"
+            f"HTTP статус: {current_status}\n"
+            f"Ошибка: {error_text}"
+        )
 
-    # Уведомляем только при изменении статуса
-    if prev_status != current_status:
-
-        # Сайт упал
-        if current_status != 200:
-            send_telegram(
-                f"⚠️ <b>Проблема с сайтом</b>\n"
-                f"{website.name}\n"
-                f"{website.url}\n\n"
-                f"HTTP статус: {current_status}"
-            )
-
-        # Сайт восстановился
-        else:
-            send_telegram(
-                f"✅ <b>Сайт восстановлен</b>\n"
-                f"{website.name}\n"
-                f"{website.url}"
-            )
-
+    # Если сайт был НЕ ОК → а теперь восстановился
+    if prev_status != 200 and current_status == 200:
+        send_telegram(
+            f"✅ <b>Сайт восстановлен</b>\n"
+            f"{website.name}\n"
+            f"{website.url}"
+        )
 
     # 2. SSL проверка
     ssl_info = check_ssl_certificate(website.url)
@@ -92,33 +86,6 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
         content_snippet=snippet,
         error=error_text,
     )
-
-    # 5. Скриншот только при ошибках
-    # Считаем ошибками всё, что НЕ 200:
-    # - 0 (нет ответа)
-    # - 3xx (редиректы)
-    # - 4xx (клиентские)
-    # - 5xx (серверные)
-    # 5. Скриншот + отправка в Telegram (только при ошибках)
-    if status_code != 200:
-        screenshot_path = None
-
-        # --- попытка сделать скриншот ---
-        try:
-            screenshot_path = take_screenshot(website)
-        except Exception as e:
-            print(f"[Screenshot ERROR] {website.url}: {e}")
-            screenshot_path = None  # чтобы не отправлять несуществующий файл
-
-        # --- попытка отправить скриншот ---
-        if screenshot_path:
-            try:
-                send_photo(
-                    screenshot_path,
-                    caption=f"⚠️ Проблема с сайтом\n{website.name}\n{website.url}"
-                )
-            except Exception as e:
-                print(f"[Telegram Photo ERROR] {website.url}: {e}")
 
     return website
 
@@ -157,6 +124,3 @@ def check_ssl_certificate(url: str) -> dict:
             "days_left": None,
             "status": f"ERROR: {e}",
         }
-
-
-
