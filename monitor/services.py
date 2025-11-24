@@ -38,32 +38,31 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
     except RequestException as e:
         error_text = str(e)
 
-
     # ---- Telegram уведомления ----
-    from sitechecker.telegram import send_telegram  # путь зависит от структуры проекта
+    from sitechecker.telegram import send_telegram
 
     prev_status = website.last_status_code
     current_status = status_code
 
-    # Сайт упал (был 200 -> стал не 200)
-    if prev_status == 200 and current_status != 200:
-        send_telegram(
-            f"⚠️ <b>Проблема с сайтом</b>\n"
-            f"{website.name}\n"
-            f"{website.url}\n\n"
-            f"HTTP статус: {current_status}\n"
-            f"Скриншот: /screenshots/{website.id}.png"
-        )
+    # Уведомляем ТОЛЬКО если статус изменился
+    if prev_status != current_status:
 
-    # Сайт восстановился (был не 200 -> стал 200)
-    if prev_status != 200 and current_status == 200:
-        send_telegram(
-            f"✅ <b>Сайт восстановлен</b>\n"
-            f"{website.name}\n"
-            f"{website.url}"
-        )
+        # Сайт упал: любой статус, кроме 200
+        if current_status != 200:
+            send_telegram(
+                f"⚠️ <b>Проблема с сайтом</b>\n"
+                f"{website.name}\n"
+                f"{website.url}\n\n"
+                f"HTTP статус: {current_status}\n"
+            )
 
-
+        # Сайт восстановился
+        else:
+            send_telegram(
+                f"✅ <b>Сайт восстановлен</b>\n"
+                f"{website.name}\n"
+                f"{website.url}"
+            )
 
     # 2. SSL проверка
     ssl_info = check_ssl_certificate(website.url)
