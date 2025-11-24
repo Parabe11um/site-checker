@@ -44,16 +44,20 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
     prev_status = website.last_status_code
     current_status = status_code
 
-    # Уведомляем ТОЛЬКО если статус изменился
+    # Если статуса нет (первый запуск) — считаем, что был 200 для логики сравнения
+    if prev_status is None:
+        prev_status = 200
+
+    # Уведомляем только при изменении статуса
     if prev_status != current_status:
 
-        # Сайт упал: любой статус, кроме 200
+        # Сайт упал
         if current_status != 200:
             send_telegram(
                 f"⚠️ <b>Проблема с сайтом</b>\n"
                 f"{website.name}\n"
                 f"{website.url}\n\n"
-                f"HTTP статус: {current_status}\n"
+                f"HTTP статус: {current_status}"
             )
 
         # Сайт восстановился
@@ -63,6 +67,7 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
                 f"{website.name}\n"
                 f"{website.url}"
             )
+
 
     # 2. SSL проверка
     ssl_info = check_ssl_certificate(website.url)
