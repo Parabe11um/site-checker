@@ -7,8 +7,6 @@ import ssl
 import socket
 from datetime import datetime
 import pytz
-from playwright.sync_api import sync_playwright
-from sitechecker.telegram import send_photo
 
 
 def check_website(website: Website, timeout: float = 10.0) -> Website:
@@ -161,24 +159,4 @@ def check_ssl_certificate(url: str) -> dict:
         }
 
 
-def take_screenshot(website):
-    path = f"/app/screenshots/{website.id}.png"
-
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=True,
-                args=["--ignore-certificate-errors"]
-            )
-            context = browser.new_context(ignore_https_errors=True)
-            page = context.new_page()
-
-            page.goto(website.url, timeout=15000)
-            page.screenshot(path=path, full_page=True)
-
-            browser.close()
-    except Exception as e:
-        print(f"[SCREENSHOT ERROR] {website.url}: {e}")
-
-    return path
 
