@@ -1,6 +1,9 @@
 import requests
 from monitor.models import TelegramSettings
 
+print("=== TELEGRAM SEND FUNCTION CALLED ===")
+
+
 def get_settings():
     try:
         return TelegramSettings.objects.first()
