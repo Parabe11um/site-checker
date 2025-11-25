@@ -43,23 +43,37 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
     prev_status = website.last_status_code
     current_status = status_code
 
-    # Если сайт раньше был OK → а теперь нет
-    if prev_status == 200 and current_status != 200:
-        send_telegram(
-            f"⚠️ <b>Проблема с сайтом</b>\n"
-            f"{website.name}\n"
-            f"{website.url}\n\n"
-            f"HTTP статус: {current_status}\n"
-            f"Ошибка: {error_text}"
-        )
+    if prev_status is None:
+        prev_status = 200
 
-    # Если сайт был НЕ ОК → а теперь восстановился
-    if prev_status != 200 and current_status == 200:
+    # --- Агрессивный режим ---
+    # Если сайт вернул 500 → отправляем ВСЕГДА
+    if current_status == 500:
         send_telegram(
-            f"✅ <b>Сайт восстановлен</b>\n"
+            f"🚨 <b>Критическая ошибка (500)</b>\n"
             f"{website.name}\n"
             f"{website.url}"
         )
+
+    # --- Уведомление при изменении статуса ---
+    elif prev_status != current_status:
+
+        # Упал
+        if current_status != 200:
+            send_telegram(
+                f"⚠️ <b>Проблема с сайтом</b>\n"
+                f"{website.name}\n"
+                f"{website.url}\n\n"
+                f"HTTP статус: {current_status}"
+            )
+
+        # Восстановился
+        else:
+            send_telegram(
+                f"✅ <b>Сайт восстановлен</b>\n"
+                f"{website.name}\n"
+                f"{website.url}"
+            )
 
     # 2. SSL проверка
     ssl_info = check_ssl_certificate(website.url)
