@@ -195,35 +195,48 @@ def check_ssl_certificate(url: str) -> dict:
 # ============================================================
 
 def check_domain_expiration(url: str) -> dict:
+    import subprocess
+    from datetime import datetime
+    import pytz
+    import re
+
+    # Получаем основной домен
     hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
+    parts = hostname.split(".")
+
+    # Если домен вида xxx.yyy.zz — оставляем только два последних
+    if len(parts) >= 2:
+        domain = ".".join(parts[-2:])
+    else:
+        domain = hostname
 
     try:
         result = subprocess.run(
-            ["whois", hostname],
+            ["whois", domain],
             capture_output=True,
             text=True,
             timeout=10
         )
-
         data = result.stdout
 
+        # Поиск даты
         patterns = [
-            r"Expiration Date: (.+)",     # .com, .net
-            r"paid-till: (.+)",           # .ru, .рф
-            r"expiry date: (.+)",         # EU
+            r"Expiration Date: (.+)",      # .com, .net, .org
+            r"paid-till: (.+)",            # .ru, .рф
+            r"expiry date: (.+)",          # европейские домены
         ]
 
         expiration = None
-
         for p in patterns:
             match = re.search(p, data, re.IGNORECASE)
             if match:
-                raw = match.group(1).strip()
+                expiration_raw = match.group(1).strip()
 
-                # Y-m-dTH:M:S
-                for format in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d"):
+                # Пытаемся распарсить разные форматы
+                for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d", "%d.%m.%Y"):
                     try:
-                        expiration = datetime.strptime(raw, format).replace(tzinfo=pytz.UTC)
+                        expiration = datetime.strptime(expiration_raw, fmt)
+                        expiration = expiration.replace(tzinfo=pytz.UTC)
                         break
                     except:
                         continue
@@ -261,3 +274,4 @@ def check_domain_expiration(url: str) -> dict:
             "days_left": None,
             "status": f"ERROR: {e}",
         }
+
