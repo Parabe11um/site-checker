@@ -13,23 +13,20 @@ import subprocess
 import re
 
 
+# -----------------------------
+#  EXTRACT ROOT DOMAIN
+# -----------------------------
 def extract_domain(url: str) -> str:
-    """
-    Возвращает корневой домен:
-    https://bar.chaochay.ru → chaochay.ru
-    https://www.site.co.uk → site.co.uk
-    """
     ext = tldextract.extract(url)
     if ext.domain and ext.suffix:
         return f"{ext.domain}.{ext.suffix}"
     return ext.registered_domain or url
 
 
+# -----------------------------
+#  CHECK DOMAIN EXPIRATION
+# -----------------------------
 def check_domain_expiration(url: str) -> dict:
-    """
-    Проверяет дату окончания регистрации домена.
-    """
-
     root_domain = extract_domain(url)
 
     try:
@@ -41,7 +38,6 @@ def check_domain_expiration(url: str) -> dict:
         )
         data = result.stdout
 
-        # Популярные шаблоны дат
         patterns = [
             r"Expiration Date: (.+)",
             r"expiry date: (.+)",
@@ -52,12 +48,12 @@ def check_domain_expiration(url: str) -> dict:
         for p in patterns:
             match = re.search(p, data, re.IGNORECASE)
             if match:
-                expiration_raw = match.group(1).strip()
+                raw = match.group(1).strip()
 
-                # Попытка распарсить несколько форматов даты
+                # ----- TRY MULTIPLE FORMATS -----
                 for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d", "%d.%m.%Y"):
                     try:
-                        expiration = datetime.strptime(expiration_raw, fmt)
+                        expiration = datetime.strptime(raw, fmt)
                         expiration = expiration.replace(tzinfo=pytz.UTC)
                         break
                     except:
@@ -75,7 +71,6 @@ def check_domain_expiration(url: str) -> dict:
         now = datetime.now(pytz.UTC)
         days_left = (expiration - now).days
 
-        # Статус
         if days_left < 0:
             status = "EXPIRED"
         elif days_left < 7:
@@ -100,65 +95,114 @@ def check_domain_expiration(url: str) -> dict:
         }
 
 
+# -----------------------------
+#  CHECK SSL
+# -----------------------------
+def check_ssl_certificate(url: str) -> dict:
+    hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
+    ctx = ssl.create_default_context()
+
+    try:
+        with socket.create_connection((hostname, 443), timeout=5) as sock:
+            with ctx.wrap_socket(sock, server_hostname=hostname) as ssock:
+                cert = ssock.getpeercert()
+
+        valid_from = datetime.strptime(cert["notBefore"], "%b %d %H:%M:%S %Y %Z").replace(tzinfo=pytz.UTC)
+        valid_to = datetime.strptime(cert["notAfter"], "%b %d %H:%M:%S %Y %Z").replace(tzinfo=pytz.UTC)
+        days_left = (valid_to - datetime.now(pytz.UTC)).days
+
+        return {
+            "valid_from": valid_from,
+            "valid_to": valid_to,
+            "days_left": days_left,
+            "status": "OK" if days_left > 0 else "EXPIRED",
+        }
+
+    except Exception as e:
+        return {
+            "valid_from": None,
+            "valid_to": None,
+            "days_left": None,
+            "status": f"ERROR: {e}",
+        }
+
+
+# -----------------------------
+#  MAIN WEBSITE CHECK
+# -----------------------------
 def check_website(website: Website, timeout: float = 10.0) -> Website:
-    """
-    Основной мониторинг сайта + SSL + домен.
-    """
 
     status_code = None
     response_time = None
     snippet = ""
     error_text = ""
 
-    # --- HTTP ---
+    # ------------ HTTP CHECK ------------
     try:
         response = requests.get(website.url, timeout=timeout)
         status_code = response.status_code
         response_time = response.elapsed.total_seconds()
         snippet = textwrap.shorten(response.text, width=2000, placeholder=" ...")
 
-        if 500 <= status_code <= 599:
+        if status_code >= 500:
             error_text = f"Server error {status_code}"
 
     except RequestException as e:
         status_code = 0
         error_text = str(e)
 
-    # --- TELEGRAM уведомления ---
-    prev_status = website.last_status_code
-    current_status = status_code
+    # ------------ TELEGRAM ANTI-SPAM LOGIC ------------
+    prev = website.last_status_code
+    curr = status_code
 
-    if prev_status is None:
-        prev_status = 200
+    if prev is None:
+        prev = 200  # считаем первый запуск "в норме"
 
-    if current_status == 0:
-        if prev_status != 0:
-            send_telegram(f"⚠️ Timeout: {website.name}\n{website.url}\n{error_text}")
-        else:
-            send_telegram(f"🚨 Двойной timeout: {website.name}\n{website.url}\n{error_text}")
+    # === Упал: 200 → 500 ===
+    if prev == 200 and curr == 500:
+        send_telegram(
+            f"🚨 <b>Сайт упал (500)</b>\n"
+            f"{website.name}\n{website.url}"
+        )
 
-    elif current_status == 500:
-        send_telegram(f"🚨 500 ошибка: {website.name}\n{website.url}")
+    # === Восстановился: 500 → 200 ===
+    elif prev == 500 and curr == 200:
+        send_telegram(
+            f"✅ <b>Сайт восстановлен</b>\n"
+            f"{website.name}\n{website.url}"
+        )
 
-    elif prev_status != current_status:
-        if current_status != 200:
-            send_telegram(f"⚠️ Ошибка {current_status}: {website.name}\n{website.url}")
-        else:
-            send_telegram(f"✅ Восстановлен: {website.name}")
+    # === Первый timeout ===
+    elif curr == 0 and prev != 0:
+        send_telegram(
+            f"⚠️ <b>Timeout</b>\n{website.name}\n{website.url}\n{error_text}"
+        )
 
-    # --- SSL ---
-    if status_code == 0:
-        ssl_info = {"valid_from": None, "valid_to": None, "days_left": None, "status": "NO_SSL_CHECK"}
+    # === Восстановился после timeout ===
+    elif prev == 0 and curr == 200:
+        send_telegram(
+            f"✅ <b>Сайт восстановился после timeout</b>\n{website.name}"
+        )
+
+    # 500→500 или 0→0 или 200→200 — молчим
+
+
+    # ------------ SSL CHECK ------------
+    if curr == 0:
+        ssl_info = {
+            "valid_from": None, "valid_to": None,
+            "days_left": None, "status": "NO_SSL_CHECK"
+        }
     else:
         ssl_info = check_ssl_certificate(website.url)
 
-    # --- DOMAIN ---
+    # ------------ DOMAIN CHECK ------------
     domain_info = check_domain_expiration(website.url)
 
-    # --- UPDATE DB ---
+    # ------------ UPDATE DB ------------
     from django.utils import timezone
 
-    website.last_status_code = status_code
+    website.last_status_code = curr
     website.last_response_time = response_time
     website.last_content_snippet = snippet
     website.last_error = error_text
@@ -180,7 +224,7 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
     # История
     WebsiteCheck.objects.create(
         website=website,
-        status_code=status_code,
+        status_code=curr,
         response_time=response_time,
         content_snippet=snippet,
         error=error_text,
