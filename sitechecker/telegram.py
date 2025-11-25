@@ -1,8 +1,6 @@
 import requests
 from monitor.models import TelegramSettings
 
-print("=== TELEGRAM SEND FUNCTION CALLED ===")
-
 
 def get_settings():
     try:
@@ -12,6 +10,8 @@ def get_settings():
 
 
 def send_telegram(msg: str):
+    print("=== DEBUG: send_telegram() called ===")
+
     cfg = get_settings()
     if not cfg:
         print("Telegram settings not configured.")
