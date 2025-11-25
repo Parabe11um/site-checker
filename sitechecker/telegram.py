@@ -18,11 +18,28 @@ def send_telegram(msg: str):
         return
 
     url = f"https://api.telegram.org/bot{cfg.token}/sendMessage"
-    requests.post(url, data={
-        "chat_id": cfg.chat_id,
+
+    r = requests.post(url, data={
+        "chat_id": cfg.chat_id.strip(),
         "text": msg,
         "parse_mode": "HTML"
     })
+
+    print("TELEGRAM RESPONSE:", r.status_code, r.text)
+
+
+# def send_telegram(msg: str):
+#     cfg = get_settings()
+#     if not cfg:
+#         print("Telegram settings not configured.")
+#         return
+#
+#     url = f"https://api.telegram.org/bot{cfg.token}/sendMessage"
+#     requests.post(url, data={
+#         "chat_id": cfg.chat_id,
+#         "text": msg,
+#         "parse_mode": "HTML"
+#     })
 
 
 def send_photo(path: str, caption: str = None):
