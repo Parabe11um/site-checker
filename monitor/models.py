@@ -23,6 +23,10 @@ class Website(models.Model):
     ssl_days_left = models.IntegerField(null=True, blank=True)
     ssl_status = models.CharField(max_length=50, null=True, blank=True)
 
+    domain_expiration = models.DateTimeField(null=True, blank=True)
+    domain_days_left = models.IntegerField(null=True, blank=True)
+    domain_status = models.CharField(max_length=50, default="UNKNOWN")
+
     created_at = models.DateTimeField("Создано", auto_now_add=True)
 
     class Meta:
