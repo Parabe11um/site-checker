@@ -7,7 +7,7 @@ import ssl
 import socket
 from datetime import datetime
 import pytz
-
+from sitechecker.telegram import send_telegram
 
 def check_website(website: Website, timeout: float = 10.0) -> Website:
     """
@@ -38,36 +38,69 @@ def check_website(website: Website, timeout: float = 10.0) -> Website:
         status_code = 0  # Сайт недоступен
 
     # ---- Telegram уведомления ----
-    from sitechecker.telegram import send_telegram
-
     prev_status = website.last_status_code
     current_status = status_code
 
-    # Если сайт раньше был OK → а теперь нет
-    if prev_status == 200 and current_status != 200:
-        send_telegram(
-            f"⚠️ <b>Проблема с сайтом</b>\n"
-            f"{website.name}\n"
-            f"{website.url}\n\n"
-            f"HTTP статус: {current_status}\n"
-            f"Ошибка: {error_text}"
-        )
+    if prev_status is None:
+        prev_status = 200
 
-    # Если сайт был НЕ ОК → а теперь восстановился
-    if prev_status != 200 and current_status == 200:
+    # --- 1. Обработка таймаутов (статус 0) ---
+    if current_status == 0:
+        # Первый таймаут
+        if prev_status != 0:
+            send_telegram(
+                f"⚠️ <b>Сайт притормаживает (timeout)</b>\n"
+                f"{website.name}\n"
+                f"{website.url}\n\n"
+                f"Ошибка: {error_text}"
+            )
+        else:
+            # Второй таймаут подряд — считаем реальной проблемой
+            send_telegram(
+                f"🚨 <b>Сайт недоступен (двойной timeout)</b>\n"
+                f"{website.name}\n"
+                f"{website.url}\n\n"
+                f"Ошибка: {error_text}"
+            )
+
+    # --- 2. Агрессивные уведомления при ошибке 500 ---
+    elif current_status == 500:
         send_telegram(
-            f"✅ <b>Сайт восстановлен</b>\n"
+            f"🚨 <b>Критическая ошибка (500)</b>\n"
             f"{website.name}\n"
             f"{website.url}"
         )
 
-    # 2. SSL проверка
-    ssl_info = check_ssl_certificate(website.url)
+    # --- 3. Любые другие изменения состояния ---
+    elif prev_status != current_status:
 
-    website.ssl_valid_from = ssl_info["valid_from"]
-    website.ssl_valid_to = ssl_info["valid_to"]
-    website.ssl_days_left = ssl_info["days_left"]
-    website.ssl_status = ssl_info["status"]
+        # Упал
+        if current_status != 200:
+            send_telegram(
+                f"⚠️ <b>Проблема с сайтом</b>\n"
+                f"{website.name}\n"
+                f"{website.url}\n\n"
+                f"HTTP статус: {current_status}"
+            )
+
+        # Восстановился
+        else:
+            send_telegram(
+                f"✅ <b>Сайт восстановлен</b>\n"
+                f"{website.name}\n"
+                f"{website.url}"
+            )
+
+    # 2. SSL проверка
+    if status_code == 0:
+        ssl_info = {
+            "valid_from": None,
+            "valid_to": None,
+            "days_left": None,
+            "status": "NO_SSL_CHECK",
+        }
+    else:
+        ssl_info = check_ssl_certificate(website.url)
 
     # 3. Обновляем последние поля
     from django.utils import timezone
