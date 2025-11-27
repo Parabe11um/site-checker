@@ -269,8 +269,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const history = [
         {% for h in history reversed %}
             {
-                t: "{{ h.created_at|date:'H:i' }}",
-                ok: {{ 1 if h.status_code == 200 else 0 }},
+                t: "{{ h.checked_at|date:'H:i' }}",
+                ok: {% if h.status_code == 200 %}1{% else %}0{% endif %},
                 code: "{{ h.status_code }}"
             },
         {% endfor %}
