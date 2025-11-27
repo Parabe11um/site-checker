@@ -12,6 +12,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils import timezone
+from datetime import timedelta
 
 @method_decorator(login_required, name="dispatch")
 class WebsiteDetailView(LoginRequiredMixin, DetailView):
@@ -22,8 +24,41 @@ class WebsiteDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["history"] = self.object.checks.all()[:20]
+        site = self.object
+
+        # ░░░ История (как и было — НЕ трогаем) ░░░
+        context["history"] = site.checks.all()[:20]
+
+        # ░░░ Новый функционал: расчёт аптайма ░░░
+        now = timezone.now()
+
+        def calc_uptime(hours):
+            since = now - timedelta(hours=hours)
+            qs = site.checks.filter(checked_at__gte=since)
+
+            total = qs.count()
+            if total == 0:
+                return None
+
+            ok = qs.filter(status_code=200).count()
+            return round((ok / total) * 100, 1)
+
+        context["uptime_24h"] = calc_uptime(24)
+        context["uptime_7d"] = calc_uptime(24 * 7)
+        context["uptime_30d"] = calc_uptime(24 * 30)
+
+        # ░░░ История для графика (последние 50 проверок) ░░░
+        context["chart_history"] = (
+            site.checks.order_by("-checked_at")[:50]
+        )
+
+        # ░░░ Последние ошибки (10 шт) ░░░
+        context["errors"] = (
+            site.checks.exclude(error="").order_by("-checked_at")[:10]
+        )
+
         return context
+
 
 
 @login_required(login_url="/login/")

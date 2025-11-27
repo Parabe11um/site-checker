@@ -70,6 +70,54 @@
             {% endif %}
         </div>
 
+
+        <div class="grid md:grid-cols-3 gap-6 mt-6">
+
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <h2 class="text-xl font-semibold mb-3">Аптайм 24 часа</h2>
+        {% if uptime_24h != None %}
+            <div class="text-4xl font-bold
+                 {% if uptime_24h > 99 %} text-green-600
+                 {% elif uptime_24h > 95 %} text-yellow-600
+                 {% else %} text-red-600 {% endif %}">
+                {{ uptime_24h }}%
+            </div>
+        {% else %}
+            <div class="text-gray-500">нет данных</div>
+        {% endif %}
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <h2 class="text-xl font-semibold mb-3">Аптайм 7 дней</h2>
+        {% if uptime_7d != None %}
+            <div class="text-4xl font-bold
+                 {% if uptime_7d > 99 %} text-green-600
+                 {% elif uptime_7d > 95 %} text-yellow-600
+                 {% else %} text-red-600 {% endif %}">
+                {{ uptime_7d }}%
+            </div>
+        {% else %}
+            <div class="text-gray-500">нет данных</div>
+        {% endif %}
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <h2 class="text-xl font-semibold mb-3">Аптайм 30 дней</h2>
+        {% if uptime_30d != None %}
+            <div class="text-4xl font-bold
+                 {% if uptime_30d > 99 %} text-green-600
+                 {% elif uptime_30d > 95 %} text-yellow-600
+                 {% else %} text-red-600 {% endif %}">
+                {{ uptime_30d }}%
+            </div>
+        {% else %}
+            <div class="text-gray-500">нет данных</div>
+        {% endif %}
+    </div>
+
+</div>
+
+
         <!-- 🟧 DOMAIN -->
         <div class="bg-white rounded-xl shadow p-4">
             <h2 class="text-xl font-semibold mb-3">Домен</h2>
@@ -114,13 +162,28 @@
              onerror="this.style.display='none'">
     </div>
 
+    <div class="bg-white rounded-xl shadow p-4 mt-8">
+    <h2 class="text-xl font-semibold mb-3">История доступности</h2>
+    <canvas id="uptimeChart" height="120"></canvas>
+</div>
+
+
     <!-- Ошибка -->
-    {% if site.last_error %}
-        <div class="bg-white rounded-xl shadow p-4 mt-8">
-            <h2 class="text-xl font-semibold mb-3 text-red-700">Последняя ошибка</h2>
-            <pre class="text-sm whitespace-pre-wrap bg-red-50 p-3 rounded border border-red-200">{{ site.last_error }}</pre>
-        </div>
-    {% endif %}
+{% if errors %}
+<div class="bg-white rounded-xl shadow p-4 mt-8">
+    <h2 class="text-xl font-semibold mb-3">Последние ошибки</h2>
+
+    <ul class="text-sm">
+        {% for e in errors %}
+            <li class="mb-2">
+                <span class="font-semibold">{{ e.created_at }}</span> —
+                <span class="text-red-700">{{ e.error|truncatechars:200 }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 
     {% if site.last_content_snippet %}
         <div class="bg-white rounded-xl shadow p-4 mt-8">
@@ -200,6 +263,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const history = [
+        {% for h in history reversed %}
+            {
+                t: "{{ h.created_at|date:'H:i' }}",
+                ok: {{ 1 if h.status_code == 200 else 0 }},
+                code: "{{ h.status_code }}"
+            },
+        {% endfor %}
+    ];
+
+    const ctx = document.getElementById("uptimeChart").getContext("2d");
+
+    new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: history.map(x => x.t),
+            datasets: [{
+                label: "Доступность",
+                data: history.map(x => x.ok),
+                borderWidth: 1,
+                backgroundColor: history.map(x =>
+                    x.ok ? "rgba(34,197,94,0.7)" : "rgba(239,68,68,0.7)"
+                ),
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true, max: 1 },
+            }
+        }
+    });
+});
+</script>
+
 
 </body>
 </html>
