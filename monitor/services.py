@@ -130,7 +130,7 @@ def check_ssl_certificate(url: str) -> dict:
 # -----------------------------
 #  MAIN WEBSITE CHECK
 # -----------------------------
-def check_website(website: Website, timeout: float = 60.0) -> Website:
+def check_website(website: Website, timeout: float = 30.0) -> Website:
 
     status_code = None
     response_time = None
