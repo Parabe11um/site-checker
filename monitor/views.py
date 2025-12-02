@@ -63,7 +63,6 @@ class WebsiteDetailView(LoginRequiredMixin, DetailView):
 
 @login_required(login_url="/login/")
 @csrf_exempt
-@require_POST
 def website_check_now(request, pk):
     site = get_object_or_404(Website, pk=pk)
     result = check_website(site)

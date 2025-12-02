@@ -1,42 +1,46 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Вход в систему</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-
-<body class="bg-gray-100 h-screen flex items-center justify-center">
-
+{% extends "monitor/base.html" %}
+{% load static %}
 {% load form_filters %}
 
-<div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-sm">
-    <h1 class="text-2xl font-bold text-center mb-6">Вход в панель мониторинга</h1>
+{% block title %}Вход в систему{% endblock %}
 
-    {% if form.errors %}
-        <div class="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">
-            Неверный логин или пароль
-        </div>
-    {% endif %}
+{% block header_title %}{% endblock %}  {# скрываем navbar #}
 
-    <form method="post">
-        {% csrf_token %}
+{% block content %}
+<div class="h-[70vh] flex items-center justify-center">
 
-        <label class="block mb-3">
-            <span class="text-gray-700 text-sm font-medium">Логин</span>
-            {{ form.username|add_class:"border rounded w-full p-2 mt-1" }}
-        </label>
+    <div class="bg-white shadow-lg rounded-xl p-8 w-full max-w-sm">
 
-        <label class="block mb-4">
-            <span class="text-gray-700 text-sm font-medium">Пароль</span>
-            {{ form.password|add_class:"border rounded w-full p-2 mt-1" }}
-        </label>
+        <h1 class="text-2xl font-bold text-center mb-6">
+            Вход в панель мониторинга
+        </h1>
 
-        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition">
-            Войти
-        </button>
-    </form>
+        {% if form.errors %}
+            <div class="bg-red-100 text-red-700 p-2 rounded mb-4 text-sm">
+                Неверный логин или пароль
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <label class="block mb-3">
+                <span class="text-gray-700 text-sm font-medium">Логин</span>
+                {{ form.username|add_class:"border rounded w-full p-2 mt-1" }}
+            </label>
+
+            <label class="block mb-4">
+                <span class="text-gray-700 text-sm font-medium">Пароль</span>
+                {{ form.password|add_class:"border rounded w-full p-2 mt-1" }}
+            </label>
+
+            <button
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition">
+                Войти
+            </button>
+        </form>
+
+    </div>
+
 </div>
-
-</body>
-</html>
+{% endblock %}

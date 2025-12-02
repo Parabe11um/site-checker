@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Указываем, где искать классы */
+@source "../../monitor/templates";
+@source "../../monitor/templates/monitor";
+@source "../../monitor";
+@source "../../sitechecker";
+
+/* (опционально) глобальные стили */

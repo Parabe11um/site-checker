@@ -25,7 +25,7 @@ class Website(models.Model):
 
     domain_expiration = models.DateTimeField(null=True, blank=True)
     domain_days_left = models.IntegerField(null=True, blank=True)
-    domain_status = models.CharField(max_length=50, default="UNKNOWN")
+    domain_status = models.CharField(max_length=100, default="UNKNOWN")
 
     created_at = models.DateTimeField("Создано", auto_now_add=True)
 

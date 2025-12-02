@@ -1,54 +1,4 @@
-{% extends "monitor/base.html" %}
-{% load static %}
 
-{% block title %}{{ site.name }} — Site Checker{% endblock %}
-{% block header_title %}{{ site.name }}{% endblock %}
-
-{% block content %}
-
-<a href="{% url 'home' %}" class="text-blue-600 hover:underline text-sm">
-    ← Назад
-</a>
-
-<button data-check-url="{% url 'site_check_now' site.pk %}"
-        class="check-btn px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition mt-3">
-    Проверить
-</button>
-
-<p class="mt-3 mb-3">
-    <strong>URL:</strong>
-    <a href="{{ site.url }}" class="text-blue-600 hover:underline" target="_blank">
-        {{ site.url }}
-    </a>
-</p>
-
-<!-- 🟦 Три верхних блока -->
-<div class="grid md:grid-cols-3 gap-6 mt-6">
-    {% include "monitor/components/detail/status_http.html" %}
-    {% include "monitor/components/detail/status_ssl.html" %}
-    {% include "monitor/components/detail/status_domain.html" %}
-</div>
-
-<!-- Uptime карточки -->
-{% include "monitor/components/detail/uptime_cards.html" %}
-
-<!-- Ошибки -->
-{% include "monitor/components/detail/errors_block.html" %}
-
-<!-- Фрагмент ответа -->
-{% include "monitor/components/detail/response_snippet.html" %}
-
-<!-- Uptime Chart -->
-{% include "monitor/components/detail/uptime_chart.html" %}
-
-<!-- Response Time Chart -->
-{% include "monitor/components/detail/response_chart.html" %}
-
-{% endblock %}
-
-{% block scripts %}
-<script src="{% static 'js/chart.js' %}"></script>
-<script>
     document.addEventListener("DOMContentLoaded", function () {
         fetch("/site/{{ site.id }}/response-data/")
             .then(res => res.json())
@@ -75,11 +25,7 @@
                 });
             });
     });
-    </script>
 
-</div>
-
-<script>
 document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll(".check-btn").forEach(btn => {
@@ -102,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
             this.disabled = true;
 
             try {
-                await fetch(url, { method: "GET" });
+                await fetch(url, { method: "POST" });
                 location.reload();
             } catch (err) {
                 alert("Ошибка проверки сайта");
@@ -112,9 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 });
-</script>
 
-<script>
 document.addEventListener("DOMContentLoaded", () => {
     const history = [
         {% for h in history reversed %}
@@ -148,5 +92,3 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
-</script>
-{% endblock %}

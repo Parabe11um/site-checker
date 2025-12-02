@@ -1,0 +1,17 @@
+<!-- DASHBOARD -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <div class="bg-green-100 border border-green-300 rounded-xl p-6 text-center">
+        <div class="text-5xl font-bold text-green-700">{{ stats.ok }}</div>
+        <div class="text-gray-700 mt-2">OK</div>
+    </div>
+
+    <div class="bg-yellow-100 border border-yellow-300 rounded-xl p-6 text-center">
+        <div class="text-5xl font-bold text-yellow-700">{{ stats.warn }}</div>
+        <div class="text-gray-700 mt-2">Внимание</div>
+    </div>
+
+    <div class="bg-red-100 border border-red-300 rounded-xl p-6 text-center">
+        <div class="text-5xl font-bold text-red-700">{{ stats.err }}</div>
+        <div class="text-gray-700 mt-2">Ошибки</div>
+    </div>
+</div>

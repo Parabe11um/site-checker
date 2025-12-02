@@ -1,0 +1,41 @@
+<div class="grid md:grid-cols-3 gap-6 mt-6">
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <h2 class="text-xl font-semibold mb-3">Аптайм 24 часа</h2>
+        {% if uptime_24h != None %}
+        <div class="text-4xl font-bold
+                 {% if uptime_24h > 99 %} text-green-600
+                 {% elif uptime_24h > 95 %} text-yellow-600
+                 {% else %} text-red-600 {% endif %}">
+            {{ uptime_24h }}%
+        </div>
+        {% else %}
+        <div class="text-gray-500">нет данных</div>
+        {% endif %}
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <h2 class="text-xl font-semibold mb-3">Аптайм 7 дней</h2>
+        {% if uptime_7d != None %}
+        <div class="text-4xl font-bold
+                 {% if uptime_7d > 99 %} text-green-600
+                 {% elif uptime_7d > 95 %} text-yellow-600
+                 {% else %} text-red-600 {% endif %}">
+            {{ uptime_7d }}%
+        </div>
+        {% else %}
+        <div class="text-gray-500">нет данных</div>
+        {% endif %}
+    </div>
+    <div class="bg-white rounded-xl shadow p-4 text-center">
+        <h2 class="text-xl font-semibold mb-3">Аптайм 30 дней</h2>
+        {% if uptime_30d != None %}
+        <div class="text-4xl font-bold
+                 {% if uptime_30d > 99 %} text-green-600
+                 {% elif uptime_30d > 95 %} text-yellow-600
+                 {% else %} text-red-600 {% endif %}">
+            {{ uptime_30d }}%
+        </div>
+        {% else %}
+        <div class="text-gray-500">нет данных</div>
+        {% endif %}
+    </div>
+</div>

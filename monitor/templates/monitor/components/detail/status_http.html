@@ -1,0 +1,13 @@
+<!-- HTTP -->
+<div class="bg-white rounded-xl shadow p-4">
+    <h2 class="text-xl font-semibold mb-3">HTTP статус</h2>
+    <p><strong>Код:</strong> {{ site.last_status_code|default:"—" }}</p>
+    <p><strong>Время ответа:</strong>
+        {% if site.last_response_time %}
+        {{ site.last_response_time }} c
+        {% else %}
+        —
+        {% endif %}
+    </p>
+    <p><strong>Последняя проверка:</strong> {{ site.last_checked_at|default:"—" }}</p>
+</div>

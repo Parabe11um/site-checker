@@ -1,0 +1,14 @@
+<!-- Скриншот -->
+<div class="bg-white rounded-xl shadow p-4 mt-8">
+    <h2 class="text-xl font-semibold mb-3">Текущий скриншот</h2>
+
+    <img src="/screenshots/{{ site.id }}.png{% if site.last_checked_at %}?{{ site.last_checked_at.timestamp }}{% endif %}"
+         alt="Screenshot"
+         class="w-full rounded border"
+         onerror="this.style.display='none'">
+</div>
+
+<div class="bg-white rounded-xl shadow p-4 mt-8">
+    <h2 class="text-xl font-semibold mb-3">История доступности</h2>
+    <canvas id="uptimeChart" height="120"></canvas>
+</div>

@@ -1,0 +1,22 @@
+<!-- SSL -->
+<div class="bg-white rounded-xl shadow p-4">
+    <h2 class="text-xl font-semibold mb-3">SSL сертификат</h2>
+
+    {% if site.ssl_status == "OK" and site.ssl_valid_to %}
+    <p><strong>Действует с:</strong> {{ site.ssl_valid_from }}</p>
+    <p><strong>Действует до:</strong> {{ site.ssl_valid_to }}</p>
+    <p><strong>Осталось дней:</strong> {{ site.ssl_days_left }}</p>
+
+    {% if site.ssl_days_left > 30 %}
+    <p class="mt-2 text-green-700 font-semibold">Сертификат в порядке.</p>
+    {% elif site.ssl_days_left >= 7 %}
+    <p class="mt-2 text-yellow-600 font-semibold">Скоро истекает.</p>
+    {% else %}
+    <p class="mt-2 text-red-700 font-semibold">Сертификат почти истёк!</p>
+    {% endif %}
+    {% elif site.ssl_status %}
+    <p class="text-red-700 font-semibold">{{ site.ssl_status }}</p>
+    {% else %}
+    <p class="text-gray-500">Данные по SSL ещё не получены.</p>
+    {% endif %}
+</div>

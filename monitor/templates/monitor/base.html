@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Site Checker{% endblock %}</title>
+
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100">
+<div class="max-w-6xl mx-auto py-10 px-4">
+    <!-- NAVBAR -->
+    {% include "monitor/components/navbar.html" %}
+
+    {% block content %}{% endblock %}
+    {% block scripts %}{% endblock %}
+
+</div>
+</body>
+</html>

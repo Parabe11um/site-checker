@@ -4,3 +4,4 @@ APScheduler==3.10.4
 django-apscheduler==0.6.2
 mysqlclient
 playwright
+tldextract
