@@ -25,8 +25,12 @@ function attachCheckHandlers() {
             })
             .then(response => response.json())
             .then(data => {
-                row.querySelector(".status-code").innerText = data.status;
-                row.querySelector(".response-time").innerText = data.response_time + " c";
+
+                const statusEl = row.querySelector(".status-code");
+                const timeEl = row.querySelector(".response-time");
+
+                if (statusEl) statusEl.innerText = data.status;
+                if (timeEl) timeEl.innerText = data.response_time + " c";
 
                 // Подсветка строки
                 row.classList.add("bg-green-100");
@@ -45,6 +49,7 @@ function attachCheckHandlers() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+
     attachCheckHandlers();
 
     // ---- Автообновление dashboard ----
@@ -52,11 +57,19 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch("/dashboard/status/")
             .then(r => r.json())
             .then(data => {
-                document.getElementById("count-ok").innerText = data.counts.ok;
-                document.getElementById("count-warn").innerText = data.counts.warn;
-                document.getElementById("count-err").innerText = data.counts.err;
-            });
+
+                const okEl = document.getElementById("count-ok");
+                const warnEl = document.getElementById("count-warn");
+                const errEl = document.getElementById("count-err");
+
+                if (okEl) okEl.innerText = data.counts.ok;
+                if (warnEl) warnEl.innerText = data.counts.warn;
+                if (errEl) errEl.innerText = data.counts.err;
+
+            })
+            .catch(() => {});
     }, 10000);
+
 
     // ---- Автообновление таблицы ----
     setInterval(() => {
@@ -66,10 +79,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, "text/html");
 
-                const newBody = doc.querySelector("#site-table-body").innerHTML;
-                document.querySelector("#site-table-body").innerHTML = newBody;
+                const newBodyWrapper = doc.querySelector("#site-table-body");
+                const bodyWrapper = document.querySelector("#site-table-body");
 
-                attachCheckHandlers();
-            });
+                if (newBodyWrapper && bodyWrapper) {
+                    bodyWrapper.innerHTML = newBodyWrapper.innerHTML;
+                    attachCheckHandlers();
+                }
+            })
+            .catch(() => {});
     }, 60000);
 });
