@@ -38,3 +38,7 @@ sitechecker/settings.py
 # ---- OS Files ----
 .DS_Store
 Thumbs.db
+
+# Tailwind binaries
+tailwindcss
+tailwindcss-linux-x64*
