@@ -54,16 +54,16 @@ class Website(models.Model):
         return f"{self.name} ({self.url})"
 
     def mark_checked(
-        self,
-        status_code: int | None,
-        response_time: float | None,
-        content_snippet: str = "",
-        error: str = "",
-        ssl_valid_from=None,
-        ssl_valid_to=None,
-        ssl_days_left=None,
-        ssl_status=None,
-    ):
+            self,
+            status_code,
+            response_time,
+            content_snippet="",
+            error="",
+            ssl_valid_from=None,
+            ssl_valid_to=None,
+            ssl_days_left=None,
+            ssl_status=None,
+        ):
         self.last_status_code = status_code
         self.last_response_time = response_time
         self.last_content_snippet = content_snippet
