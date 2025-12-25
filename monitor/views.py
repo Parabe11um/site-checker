@@ -11,6 +11,7 @@ import datetime
 import pytz
 
 from .models import Site, UserSite, TelegramSettings
+from .forms import WebsiteForm, TelegramSettingsForm
 from .services import check_site
 from .forms import TelegramSettingsForm
 from django.views.decorators.csrf import csrf_exempt
@@ -186,20 +187,24 @@ def site_list(request):
 @login_required
 def site_create(request):
     if request.method == "POST":
-        url = request.POST.get("url")
-        name = request.POST.get("name")
+        form = WebsiteForm(request.POST)
+        if form.is_valid():
+            site = form.save(commit=False)
+            site.save()
 
-        site, _ = Site.objects.get_or_create(url=url)
+            UserSite.objects.get_or_create(
+                user=request.user,
+                site=site,
+                defaults={"name": form.cleaned_data["name"]}
+            )
 
-        UserSite.objects.get_or_create(
-            user=request.user,
-            site=site,
-            defaults={"name": name}
-        )
+            return redirect("home")
+    else:
+        form = WebsiteForm()
 
-        return redirect("home")
-
-    return render(request, "monitor/site_create.html")
+    return render(request, "monitor/site_create.html", {
+        "form": form
+    })
 
 
 
