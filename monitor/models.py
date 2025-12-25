@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
-
+from urllib.parse import urlparse
 
 class Website(models.Model):
     name = models.CharField("Название", max_length=255)
@@ -84,7 +84,7 @@ class Website(models.Model):
 
 class Site(models.Model):
     url = models.URLField(unique=True)
-    normalized_url = models.CharField(max_length=255, unique=True)
+    normalized_url = models.CharField(max_length=255, unique=True, editable=False)
 
     # Последнее состояние
     last_status_code = models.IntegerField(null=True, blank=True)
@@ -102,6 +102,12 @@ class Site(models.Model):
     domain_status = models.CharField(max_length=100, default="UNKNOWN")
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.normalized_url:
+            parsed = urlparse(self.url)
+            self.normalized_url = parsed.netloc.lower()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.url
