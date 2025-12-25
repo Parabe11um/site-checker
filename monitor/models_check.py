@@ -1,11 +1,11 @@
 # monitor/models_check.py
 from django.db import models
 from django.utils import timezone
-from .models import Website
+from .models import Site
 
 
-class WebsiteCheck(models.Model):
-    website = models.ForeignKey(Website, on_delete=models.CASCADE, related_name="checks")
+class SiteCheck(models.Model):
+    site = models.ForeignKey(Site, on_delete=models.CASCADE, related_name="checks")
     status_code = models.IntegerField(null=True, blank=True)
     response_time = models.FloatField(null=True, blank=True)
     error = models.TextField(blank=True)
@@ -18,4 +18,4 @@ class WebsiteCheck(models.Model):
         verbose_name_plural = "История проверок"
 
     def __str__(self):
-        return f"Check {self.website.name} @ {self.checked_at}"
+        return f"Check {self.site} @ {self.checked_at}"

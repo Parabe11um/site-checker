@@ -1,0 +1,12 @@
+{% extends "monitor/base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto mt-10 bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-semibold mb-4">Личный кабинет</h2>
+    <p>Добро пожаловать, {{ request.user.username }}!</p>
+
+    <p class="mt-4">
+        <a href="/logout/" class="text-blue-600">Выйти</a>
+    </p>
+</div>
+{% endblock %}

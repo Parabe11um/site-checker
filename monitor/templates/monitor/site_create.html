@@ -1,0 +1,50 @@
+{% extends "monitor/base.html" %}
+{% load static %}
+
+{% block title %}Добавить сайт{% endblock %}
+{% block header_title %}Добавление сайта{% endblock %}
+
+{% block content %}
+
+<div class="max-w-lg mx-auto bg-white shadow p-6 rounded-xl">
+
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="p-3 bg-red-100 text-red-700 rounded">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <!-- Поле: название -->
+        <div>
+            <label class="block text-sm font-medium mb-1">Название сайта</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <p class="text-red-600 text-sm">{{ form.name.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Поле: URL -->
+        <div>
+            <label class="block text-sm font-medium mb-1">URL</label>
+            {{ form.url }}
+            {% if form.url.errors %}
+                <p class="text-red-600 text-sm">{{ form.url.errors.0 }}</p>
+            {% endif %}
+        </div>
+
+        <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+            Добавить сайт
+        </button>
+
+        <a href="{% url 'home' %}" class="block text-center text-gray-600 mt-3 hover:underline">
+            ← Назад к списку сайтов
+        </a>
+
+    </form>
+
+</div>
+
+{% endblock %}

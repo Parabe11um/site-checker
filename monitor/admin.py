@@ -1,49 +1,61 @@
 from django.contrib import admin
-from .models import Website, TelegramSettings
-from .services import check_website
+from .models import Site, UserSite, TelegramSettings
+from .models_check import SiteCheck
 
 
-@admin.register(Website)
-class WebsiteAdmin(admin.ModelAdmin):
+# -------------------------------
+# Site (единый сайт)
+# -------------------------------
+@admin.register(Site)
+class SiteAdmin(admin.ModelAdmin):
     list_display = (
-        "name",
         "url",
         "last_status_code",
         "last_response_time",
         "last_checked_at",
     )
-    search_fields = ("name", "url")
+    search_fields = ("url",)
     readonly_fields = (
         "last_status_code",
         "last_response_time",
         "last_checked_at",
         "last_error",
-        "last_content_snippet",
-        "created_at",
     )
-
-    fieldsets = (
-        (None, {"fields": ("name", "url")}),
-        ("Последний результат проверки", {
-            "fields": (
-                "last_status_code",
-                "last_response_time",
-                "last_checked_at",
-                "last_error",
-                "last_content_snippet",
-            )
-        }),
-        ("Служебное", {"fields": ("created_at",)}),
-    )
-
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        if change:
-            check_website(obj)
 
 
 # -------------------------------
-# Регистрация Telegram-настроек
+# Связь пользователь ↔ сайт
 # -------------------------------
+@admin.register(UserSite)
+class UserSiteAdmin(admin.ModelAdmin):
+    list_display = ("user", "site", "name", "notify_enabled")
+    list_filter = ("notify_enabled",)
+    search_fields = ("user__username", "site__url", "name")
 
+
+# -------------------------------
+# История проверок
+# -------------------------------
+@admin.register(SiteCheck)
+class WebsiteCheckAdmin(admin.ModelAdmin):
+    list_display = (
+        "site",
+        "status_code",
+        "response_time",
+        "checked_at",
+    )
+    list_filter = ("status_code",)
+    readonly_fields = (
+        "site",
+        "status_code",
+        "response_time",
+        "content_snippet",
+        "error",
+        "checked_at",
+    )
+
+
+# -------------------------------
+# Telegram настройки
+# -------------------------------
 admin.site.register(TelegramSettings)

@@ -66,4 +66,9 @@
             Открыть →
         </a>
     </td>
+
+    <td class="p-2 text-right">
+        <a href="{% url 'site_delete' site.id %}" class="text-red-600"
+           onclick="return confirm('Удалить сайт?')">Удалить</a>
+    </td>
 </tr>

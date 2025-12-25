@@ -18,7 +18,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "monitor",
     "django_apscheduler",
+    "accounts",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -65,7 +68,7 @@ DATABASES = {
     }
 }
 
-
+ADMIN_ENABLED = True
 LANGUAGE_CODE = "ru-ru"
 TIME_ZONE = "Europe/Moscow"  # Или твой
 USE_I18N = True
@@ -87,3 +90,8 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = '/login/'
 
+# -----------------------------
+# EMAIL SETTINGS (для разработки)
+# -----------------------------
+EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
+EMAIL_FILE_PATH = "/app/sent_emails"

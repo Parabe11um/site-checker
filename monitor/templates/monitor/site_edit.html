@@ -1,0 +1,37 @@
+{% extends "monitor/base.html" %}
+{% load static %}
+
+{% block title %}Редактировать сайт{% endblock %}
+{% block header_title %}Редактирование сайта{% endblock %}
+
+{% block content %}
+
+<div class="max-w-lg mx-auto bg-white shadow p-6 rounded-xl">
+
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+
+        <!-- Поля формы -->
+        <div>
+            <label class="block text-sm font-medium mb-1">Название сайта</label>
+            {{ form.name }}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">URL</label>
+            {{ form.url }}
+        </div>
+
+        <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
+            Сохранить изменения
+        </button>
+
+        <a href="{% url 'home' %}" class="block text-center text-gray-600 mt-3 hover:underline">
+            ← Назад к списку сайтов
+        </a>
+
+    </form>
+
+</div>
+
+{% endblock %}

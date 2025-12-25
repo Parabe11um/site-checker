@@ -1,13 +1,13 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from django.conf import settings
 from .views import set_scheduler_instance, get_scheduler_instance
-from .services import check_website
+from .services import check_site
 from .models import Website
 from apscheduler.triggers.interval import IntervalTrigger
 
 def run_checks():
     for site in Website.objects.all():
-        check_website(site)
+        check_site(site)
 
 def start_scheduler():
     # Если scheduler уже запущен — НЕ запускать повторно

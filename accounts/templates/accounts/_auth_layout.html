@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Site Checker{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+</head>
+
+<body class="min-h-screen bg-white">
+
+<div class="min-h-screen flex">
+
+    <!-- LEFT -->
+    <aside class="w-full max-w-md flex flex-col justify-center px-10">
+
+        <div class="mb-10">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full bg-blue-600
+                            flex items-center justify-center
+                            text-white font-bold">
+                    S
+                </div>
+                <span class="text-lg font-semibold">Site-Checker</span>
+            </div>
+
+            <h1 class="text-3xl font-semibold text-slate-900">
+                {% block form_title %}{% endblock %}
+            </h1>
+
+            <p class="text-slate-500 mt-2">
+                {% block form_subtitle %}{% endblock %}
+            </p>
+        </div>
+
+        {% block form_content %}{% endblock %}
+
+    </aside>
+
+<!-- RIGHT -->
+<section
+    class="hidden md:flex flex-1 relative overflow-hidden rounded-l-[40px]"
+    style="background-image: url('{% static 'images/login_bg.png' %}');
+           background-size: cover;
+           background-position: center;"
+>
+
+    <!-- мягкие цветовые пятна -->
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-pink-400/30 blur-3xl"></div>
+    <div class="absolute bottom-0 right-0 w-96 h-96 bg-blue-400/30 blur-3xl"></div>
+
+    <!-- ТЕКСТ -->
+    <div
+        class="absolute top-12 left-12 z-10 max-w-lg
+               p-6 rounded-2xl
+               bg-white/60 backdrop-blur-xl
+               shadow-lg
+               animate-auth-text"
+    >
+        <h2 class="text-3xl font-semibold text-slate-900 leading-tight">
+            Следите за аптаймом
+        </h2>
+
+        <p class="text-slate-600 mt-3 text-base">
+            Уведомления о сбоях, SSL<br>
+            и скорости ответа сайтов
+        </p>
+    </div>
+
+</section>
+
+
+</div>
+
+</body>
+</html>

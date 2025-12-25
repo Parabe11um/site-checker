@@ -1,0 +1,33 @@
+{% extends "accounts/_auth_layout.html" %}
+
+{% block title %}Регистрация — Site Checker{% endblock %}
+
+{% block form_title %}Создание аккаунта{% endblock %}
+{% block form_subtitle %}Начните мониторинг сайтов за 1 минуту{% endblock %}
+
+{% block form_content %}
+
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    {{ form.username }}
+    {{ form.email }}
+    {{ form.password1 }}
+    {{ form.password2 }}
+
+    <button
+        class="w-full py-3 rounded-lg text-white font-medium
+               bg-gradient-to-r from-blue-500 to-violet-600">
+        Зарегистрироваться
+    </button>
+</form>
+
+<p class="mt-6 text-sm text-slate-500">
+    Уже есть аккаунт?
+    <a href="{% url 'login' %}" class="text-blue-600 hover:underline cursor-pointer">
+        Войти
+    </a>
+</p>
+
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "accounts/_auth_layout.html" %}
+
+{% block title %}Site Checker{% endblock %}
+
+{% block form_title %}Вход в Site-Checker{% endblock %}
+{% block form_subtitle %}Мониторинг доступности и скорости сайтов{% endblock %}
+
+{% block form_content %}
+
+<div class="flex flex-col items-center w-full">
+
+    <form method="post" class="w-full max-w-sm p-10">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <input
+            type="text"
+            name="username"
+            placeholder="Email или логин"
+            class="w-full rounded-lg border border-slate-300 mb-5 px-4 py-3
+                   focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
+        >
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Пароль"
+            class="w-full rounded-lg border border-slate-300 mb-5 px-4 py-3
+                   focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            required
+        >
+
+        <button
+            class="w-full py-3 rounded-lg text-white font-medium
+                   bg-gradient-to-r from-blue-500 to-violet-600 cursor-pointer">
+            Войти
+        </button>
+    </form>
+
+    <p class="mt-6 text-sm text-center text-slate-500">
+        Нет аккаунта?
+        <a href="{% url 'register' %}" class="text-blue-600 hover:underline">
+            Зарегистрироваться
+        </a>
+    </p>
+
+</div>
+
+{% endblock %}

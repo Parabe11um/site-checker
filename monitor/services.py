@@ -1,8 +1,9 @@
 import textwrap
 import requests
 from requests.exceptions import RequestException
-from .models import Website
-from .models_check import WebsiteCheck
+from django.utils import timezone
+from monitor.models import Site, UserSite
+from monitor.models_check import SiteCheck
 import ssl
 import socket
 from datetime import datetime
@@ -130,16 +131,14 @@ def check_ssl_certificate(url: str) -> dict:
 # -----------------------------
 #  MAIN WEBSITE CHECK
 # -----------------------------
-def check_website(website: Website, timeout: float = 30.0) -> Website:
-
+def check_site(site: Site, timeout: float = 30.0) -> Site:
     status_code = None
     response_time = None
     snippet = ""
     error_text = ""
 
-    # ------------ HTTP CHECK ------------
     try:
-        response = requests.get(website.url, timeout=timeout)
+        response = requests.get(site.url, timeout=timeout)
         status_code = response.status_code
         response_time = response.elapsed.total_seconds()
         snippet = textwrap.shorten(response.text, width=2000, placeholder=" ...")
@@ -151,40 +150,44 @@ def check_website(website: Website, timeout: float = 30.0) -> Website:
         status_code = 0
         error_text = str(e)
 
-    # ------------ TELEGRAM ANTI-SPAM LOGIC ------------
-    prev = website.last_status_code
+    prev = site.last_status_code
     curr = status_code
 
     if prev is None:
-        prev = 200  # считаем первый запуск "в норме"
+        prev = 200
 
-    # === Упал: 200 → 500 ===
-    if prev == 200 and curr == 500:
-        send_telegram(
-            f"🚨 <b>Сайт упал (500)</b>\n"
-            f"{website.name}\n{website.url}"
-        )
 
-    # === Восстановился: 500 → 200 ===
-    elif prev == 500 and curr == 200:
-        send_telegram(
-            f"✅ <b>Сайт восстановлен</b>\n"
-            f"{website.name}\n{website.url}"
-        )
+    if prev != curr:
+        subscriptions = UserSite.objects.filter(site=site, notify_enabled=True)
 
-    # === Первый timeout ===
-    elif curr == 0 and prev != 0:
-        send_telegram(
-            f"⚠️ <b>Timeout</b>\n{website.name}\n{website.url}\n{error_text}"
-        )
+        for sub in subscriptions:
+            user = sub.user
+            name = sub.name or site.url
 
-    # === Восстановился после timeout ===
-    elif prev == 0 and curr == 200:
-        send_telegram(
-            f"✅ <b>Сайт восстановился после timeout</b>\n{website.name}"
-        )
+            if prev == 200 and curr >= 500:
+                send_telegram(
+                    user,
+                    f"🚨 <b>Сайт упал</b>\n{name}\n{site.url}"
+                )
 
-    # 500→500 или 0→0 или 200→200 — молчим
+            elif prev >= 500 and curr == 200:
+                send_telegram(
+                    user,
+                    f"✅ <b>Сайт восстановлен</b>\n{name}"
+                )
+
+            elif curr == 0 and prev not in (0, None):
+                send_telegram(
+                    user,
+                    f"⚠️ <b>Timeout</b>\n{name}\n{error_text}"
+                )
+
+            elif prev == 0 and curr == 200:
+                send_telegram(
+                    user,
+                    f"✅ <b>Сайт восстановился</b>\n{name}"
+                )
+
 
 
     # ------------ SSL CHECK ------------
@@ -194,40 +197,40 @@ def check_website(website: Website, timeout: float = 30.0) -> Website:
             "days_left": None, "status": "NO_SSL_CHECK"
         }
     else:
-        ssl_info = check_ssl_certificate(website.url)
+        ssl_info = check_ssl_certificate(site.url)
 
     # ------------ DOMAIN CHECK ------------
-    domain_info = check_domain_expiration(website.url)
+    domain_info = check_domain_expiration(site.url)
 
     # ------------ UPDATE DB ------------
     from django.utils import timezone
 
-    website.last_status_code = curr
-    website.last_response_time = response_time
-    website.last_content_snippet = snippet
-    website.last_error = error_text
-    website.last_checked_at = timezone.now()
+    site.last_status_code = curr
+    site.last_response_time = response_time
+    site.last_content_snippet = snippet
+    site.last_error = error_text
+    site.last_checked_at = timezone.now()
 
     # SSL
-    website.ssl_valid_from = ssl_info["valid_from"]
-    website.ssl_valid_to = ssl_info["valid_to"]
-    website.ssl_days_left = ssl_info["days_left"]
-    website.ssl_status = ssl_info["status"]
+    site.ssl_valid_from = ssl_info["valid_from"]
+    site.ssl_valid_to = ssl_info["valid_to"]
+    site.ssl_days_left = ssl_info["days_left"]
+    site.ssl_status = ssl_info["status"]
 
     # Domain
-    website.domain_expiration = domain_info["expiration"]
-    website.domain_days_left = domain_info["days_left"]
-    website.domain_status = domain_info["status"]
+    site.domain_expiration = domain_info["expiration"]
+    site.domain_days_left = domain_info["days_left"]
+    site.domain_status = domain_info["status"]
 
-    website.save()
+    site.save()
 
     # История
-    WebsiteCheck.objects.create(
-        website=website,
+    SiteCheck.objects.create(
+        site=site,
         status_code=curr,
         response_time=response_time,
         content_snippet=snippet,
         error=error_text,
     )
 
-    return website
+    return site

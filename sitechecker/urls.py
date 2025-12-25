@@ -1,29 +1,43 @@
-from django.contrib.auth import views as auth_views
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from monitor.views import HomeView, custom_logout
 
-urlpatterns = [
-      path("admin/", admin.site.urls),
+from accounts.views import (
+    RegisterView, ActivateView, LoginView, LogoutView, dashboard
+)
 
-      # Авторизация
-      path("login/", auth_views.LoginView.as_view(
-          template_name="monitor/login.html",
-          redirect_authenticated_user=True
-      ), name="login"),
+urlpatterns = []
 
-      # logout
-      path("logout/", custom_logout, name="logout"),
+# ------- Админка (только если включена) -------
+if settings.ADMIN_ENABLED:
+    urlpatterns += [
+        path("admin/", admin.site.urls),
+    ]
 
-      path("", HomeView.as_view(), name="home"),
-      path("", include("monitor.urls")),
-    ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# Раздача статических файлов (только DEBUG)
+# ------- Аутентификация -------
+urlpatterns += [
+    path("register/", RegisterView.as_view(), name="register"),
+    path("activate/<uidb64>/<token>/", ActivateView.as_view(), name="activate"),
+
+    path("login/", LoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(), name="logout"),
+
+    path("dashboard/", dashboard, name="dashboard"),
+]
+
+
+# ------- Основной интерфейс мониторинга -------
+urlpatterns += [
+    # Теперь главный экран — SiteListView из monitor.views
+    path("", include("monitor.urls")),
+]
+
+
+# ------- Статика и медиа -------
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-    # Раздача скриншотов
     urlpatterns += static("/screenshots/", document_root="/app/screenshots/")

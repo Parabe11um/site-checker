@@ -1,10 +1,20 @@
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 
 
 class Website(models.Model):
     name = models.CharField("Название", max_length=255)
-    url = models.URLField("URL", unique=True)
+    url = models.URLField("URL")
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="websites",
+        verbose_name="Владелец",
+        null=True,
+        blank=True
+    )
 
     last_status_code = models.IntegerField("Последний статус", null=True, blank=True)
     last_response_time = models.FloatField(
@@ -33,20 +43,26 @@ class Website(models.Model):
         ordering = ["-created_at"]
         verbose_name = "Сайт"
         verbose_name_plural = "Сайты"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "url"],
+                name="unique_site_per_user"
+            )
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.url})"
 
     def mark_checked(
-            self,
-            status_code: int | None,
-            response_time: float | None,
-            content_snippet: str = "",
-            error: str = "",
-            ssl_valid_from=None,
-            ssl_valid_to=None,
-            ssl_days_left=None,
-            ssl_status=None,
+        self,
+        status_code: int | None,
+        response_time: float | None,
+        content_snippet: str = "",
+        error: str = "",
+        ssl_valid_from=None,
+        ssl_valid_to=None,
+        ssl_days_left=None,
+        ssl_status=None,
     ):
         self.last_status_code = status_code
         self.last_response_time = response_time
@@ -54,7 +70,6 @@ class Website(models.Model):
         self.last_error = error
         self.last_checked_at = timezone.now()
 
-        # SSL
         if ssl_valid_from:
             self.ssl_valid_from = ssl_valid_from
         if ssl_valid_to:
@@ -65,6 +80,55 @@ class Website(models.Model):
             self.ssl_status = ssl_status
 
         self.save()
+
+
+class Site(models.Model):
+    url = models.URLField(unique=True)
+    normalized_url = models.CharField(max_length=255, unique=True)
+
+    # Последнее состояние
+    last_status_code = models.IntegerField(null=True, blank=True)
+    last_response_time = models.FloatField(null=True, blank=True)
+    last_checked_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+
+    ssl_valid_from = models.DateTimeField(null=True, blank=True)
+    ssl_valid_to = models.DateTimeField(null=True, blank=True)
+    ssl_days_left = models.IntegerField(null=True, blank=True)
+    ssl_status = models.CharField(max_length=50, null=True, blank=True)
+
+    domain_expiration = models.DateTimeField(null=True, blank=True)
+    domain_days_left = models.IntegerField(null=True, blank=True)
+    domain_status = models.CharField(max_length=100, default="UNKNOWN")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.url
+
+
+class UserSite(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_sites"
+    )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.CASCADE,
+        related_name="subscribers"
+    )
+
+    name = models.CharField("Название у пользователя", max_length=255)
+    notify_enabled = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "site")
+
+    def __str__(self):
+        return f"{self.user} → {self.site.url}"
 
 
 class TelegramSettings(models.Model):
