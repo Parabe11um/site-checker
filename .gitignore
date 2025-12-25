@@ -43,3 +43,6 @@ Thumbs.db
 # Tailwind binaries
 tailwindcss
 tailwindcss-linux-x64*
+
+# prod-only settings
+sitechecker/settings/production.py
