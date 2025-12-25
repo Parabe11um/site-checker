@@ -187,24 +187,20 @@ def site_list(request):
 @login_required
 def site_create(request):
     if request.method == "POST":
-        form = WebsiteForm(request.POST)
-        if form.is_valid():
-            site = form.save(commit=False)
-            site.save()
+        name = request.POST.get("name")
+        url = request.POST.get("url")
 
-            UserSite.objects.get_or_create(
-                user=request.user,
-                site=site,
-                defaults={"name": form.cleaned_data["name"]}
-            )
+        site, _ = Site.objects.get_or_create(url=url)
 
-            return redirect("home")
-    else:
-        form = WebsiteForm()
+        UserSite.objects.get_or_create(
+            user=request.user,
+            site=site,
+            defaults={"name": name}
+        )
 
-    return render(request, "monitor/site_create.html", {
-        "form": form
-    })
+        return redirect("home")
+
+    return render(request, "monitor/site_create.html")
 
 
 
