@@ -6,6 +6,11 @@ SECRET_KEY = "replace-me-dev"
 
 ALLOWED_HOSTS = ["*"]
 
+
+INSTALLED_APPS = [
+    "django_apscheduler",
+]
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
