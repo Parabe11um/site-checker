@@ -106,11 +106,13 @@ class Site(models.Model):
     def save(self, *args, **kwargs):
         if not self.normalized_url:
             parsed = urlparse(self.url)
-            self.normalized_url = parsed.netloc.lower()
-        super().save(*args, **kwargs)
 
-    def __str__(self):
-        return self.url
+            if not parsed.netloc:
+                raise ValueError(f"Invalid URL for normalization: {self.url}")
+
+            self.normalized_url = parsed.netloc.lower()
+
+        super().save(*args, **kwargs)
 
 
 class UserSite(models.Model):
