@@ -1,0 +1,82 @@
+{% extends "monitor/base.html" %}
+{% load static %}
+
+{% block title %}Telegram-уведомления{% endblock %}
+
+{% block header_title %}
+Telegram-уведомления
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-2xl bg-white shadow rounded-xl p-6">
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- BOT TOKEN -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Bot Token
+            </label>
+            {{ form.token }}
+            <p class="text-sm text-gray-500 mt-1">
+                Получи у <b>@BotFather</b>
+            </p>
+        </div>
+
+        <!-- CHAT ID -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Chat ID
+            </label>
+            {{ form.chat_id }}
+            <p class="text-sm text-gray-500 mt-1">
+                Можно узнать через <b>@userinfobot</b>
+            </p>
+        </div>
+
+        <!-- TYPES -->
+        <div class="border-t pt-4">
+            <h3 class="font-semibold mb-3 text-gray-800">
+                Типы уведомлений
+            </h3>
+
+            <label class="flex items-center gap-2">
+                {{ form.notify_down }} <span>Падение сайта</span>
+            </label>
+
+            <label class="flex items-center gap-2 mt-2">
+                {{ form.notify_up }} <span>Восстановление сайта</span>
+            </label>
+
+            <label class="flex items-center gap-2 mt-2">
+                {{ form.notify_timeout }} <span>Таймаут / недоступен</span>
+            </label>
+        </div>
+
+        <!-- ENABLE -->
+        <div class="border-t pt-4">
+            <label class="flex items-center gap-2">
+                {{ form.is_active }}
+                <span class="font-medium">Включить Telegram-уведомления</span>
+            </label>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="pt-6 flex gap-3">
+            <button type="submit"
+                    class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                Сохранить
+            </button>
+
+            <a href="{% url 'home' %}"
+               class="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                Назад
+            </a>
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}

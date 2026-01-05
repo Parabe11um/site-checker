@@ -1,11 +1,45 @@
-<h1 class="text-3xl font-bold mb-6 text-gray-800">{% block header_title %}{% endblock %}</h1>
+<div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center justify-end gap-3 h-14">
 
-<div class="text-right mb-4">
-{% if request.user.is_authenticated %}
-    <a href="{% url 'site_create' %}"
-   class="bg-blue-600 text-white px-4 py-2 m-20 rounded">Добавить сайт</a>
-    <a href="{% url 'logout' %}" class="text-sm text-red-600 hover:underline">
-        Выйти
-    </a>
-{% endif %}
+        {% if request.user.is_authenticated %}
+            {% with tg=request.user.telegram_settings %}
+                {% if tg and tg.is_active %}
+                    <a href="{% url 'telegram_settings' %}"
+                       class="px-4 py-2 text-sm rounded-lg
+                              bg-green-100 text-green-700
+                              hover:bg-green-200 transition">
+                        Telegram ✓
+                    </a>
+                {% elif tg %}
+                    <a href="{% url 'telegram_settings' %}"
+                       class="px-4 py-2 text-sm rounded-lg
+                              bg-yellow-100 text-yellow-700
+                              hover:bg-yellow-200 transition">
+                        Telegram ⚠
+                    </a>
+                {% else %}
+                    <a href="{% url 'telegram_settings' %}"
+                       class="px-4 py-2 text-sm rounded-lg
+                              bg-gray-100 text-gray-700
+                              hover:bg-gray-200 transition">
+                        Telegram
+                    </a>
+                {% endif %}
+            {% endwith %}
+
+            <a href="{% url 'site_create' %}"
+               class="px-4 py-2 text-sm rounded-lg
+                      bg-blue-600 text-white
+                      hover:bg-blue-700 transition">
+                Добавить сайт
+            </a>
+
+            <a href="{% url 'logout' %}"
+               class="px-4 py-2 text-sm rounded-lg
+                      text-red-600 hover:bg-red-50 transition">
+                Выйти
+            </a>
+        {% endif %}
+
+    </div>
 </div>

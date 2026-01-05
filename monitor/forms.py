@@ -31,12 +31,19 @@ class AddSiteForm(forms.Form):
 class TelegramSettingsForm(forms.ModelForm):
     class Meta:
         model = TelegramSettings
-        fields = ["token", "chat_id"]
+        fields = [
+            "token",
+            "chat_id",
+            "is_active",
+            "notify_down",
+            "notify_up",
+            "notify_timeout",
+        ]
         widgets = {
             "token": forms.TextInput(attrs={
-                "class": "border rounded px-3 py-2 w-full"
+                "class": "border rounded px-3 py-2 w-full",
             }),
             "chat_id": forms.TextInput(attrs={
-                "class": "border rounded px-3 py-2 w-full"
+                "class": "border rounded px-3 py-2 w-full",
             }),
         }

@@ -2,7 +2,7 @@ import textwrap
 import requests
 from requests.exceptions import RequestException
 from django.utils import timezone
-from monitor.models import Site, UserSite
+from monitor.models import Site, UserSite, TelegramSettings
 from monitor.models_check import SiteCheck
 import ssl
 import socket
@@ -156,7 +156,6 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     if prev is None:
         prev = 200
 
-
     if prev != curr:
         subscriptions = UserSite.objects.filter(site=site, notify_enabled=True)
 
@@ -164,31 +163,38 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
             user = sub.user
             name = sub.name or site.url
 
-            if prev == 200 and curr >= 500:
+            tg = getattr(user, "telegram_settings", None)
+
+            if not tg or not tg.is_active:
+                continue
+
+            # 🔴 Падение сайта
+            if prev == 200 and curr >= 500 and tg.notify_down:
                 send_telegram(
                     user,
                     f"🚨 <b>Сайт упал</b>\n{name}\n{site.url}"
                 )
 
-            elif prev >= 500 and curr == 200:
+            # 🟢 Восстановление после падения
+            elif prev >= 500 and curr == 200 and tg.notify_up:
                 send_telegram(
                     user,
                     f"✅ <b>Сайт восстановлен</b>\n{name}"
                 )
 
-            elif curr == 0 and prev not in (0, None):
+            # ⚠️ Таймаут
+            elif curr == 0 and prev not in (0, None) and tg.notify_timeout:
                 send_telegram(
                     user,
                     f"⚠️ <b>Timeout</b>\n{name}\n{error_text}"
                 )
 
-            elif prev == 0 and curr == 200:
+            # 🟢 Восстановление после таймаута
+            elif prev == 0 and curr == 200 and tg.notify_up:
                 send_telegram(
                     user,
                     f"✅ <b>Сайт восстановился</b>\n{name}"
                 )
-
-
 
     # ------------ SSL CHECK ------------
     if curr == 0:

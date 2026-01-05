@@ -16,7 +16,8 @@ from .services import check_site
 from .forms import TelegramSettingsForm
 from django.views.decorators.csrf import csrf_exempt
 
-
+from django.contrib import messages
+from sitechecker.telegram import send_telegram
 
 
 # ======================================================
@@ -234,19 +235,49 @@ def site_delete(request, pk):
 # ======================================================
 @login_required
 def telegram_settings_view(request):
-    settings_obj, _ = TelegramSettings.objects.get_or_create(id=1)
+    settings_obj, _ = TelegramSettings.objects.get_or_create(
+        user=request.user
+    )
 
     if request.method == "POST":
-        form = TelegramSettingsForm(request.POST, instance=settings_obj)
+
+        # --- Кнопка "Отправить тест" ---
+        if "send_test" in request.POST:
+            send_telegram(
+                request.user,
+                "✅ Тестовое сообщение от Site-Checker"
+            )
+            messages.success(
+                request,
+                "Тестовое сообщение отправлено в Telegram"
+            )
+            return redirect("telegram_settings")
+
+        # --- Сохранение формы ---
+        form = TelegramSettingsForm(
+            request.POST,
+            instance=settings_obj
+        )
+
         if form.is_valid():
             form.save()
+            messages.success(
+                request,
+                "Telegram-настройки сохранены"
+            )
             return redirect("telegram_settings")
 
     else:
         form = TelegramSettingsForm(instance=settings_obj)
 
-    return render(request, "monitor/telegram_settings.html", {"form": form})
-
+    return render(
+        request,
+        "monitor/telegram_settings.html",
+        {
+            "form": form,
+            "settings": settings_obj,
+        }
+    )
 
 # ======================================================
 #                ЛОГАУТ

@@ -140,12 +140,16 @@ class UserSite(models.Model):
 
 
 class TelegramSettings(models.Model):
-    token = models.CharField("Telegram Bot Token", max_length=200)
-    chat_id = models.CharField("Telegram Chat ID", max_length=50)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="telegram_settings"
+    )
 
-    def __str__(self):
-        return "Telegram Integration Settings"
-
-    class Meta:
-        verbose_name = "Telegram настройки"
-        verbose_name_plural = "Telegram настройки"
+    token = models.CharField(max_length=200)
+    chat_id = models.CharField(max_length=50)
+    is_active = models.BooleanField(default=True)
+    notify_down = models.BooleanField(default=True)
+    notify_up = models.BooleanField(default=True)
+    notify_timeout = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
