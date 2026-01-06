@@ -9,12 +9,40 @@
 
 <form method="post" class="space-y-4">
     {% csrf_token %}
-    {{ form.non_field_errors }}
 
-    {{ form.username }}
-    {{ form.email }}
-    {{ form.password1 }}
-    {{ form.password2 }}
+    {% if form.non_field_errors %}
+        <div class="p-3 rounded bg-red-50 text-red-700 text-sm">
+            {{ form.non_field_errors.0 }}
+        </div>
+    {% endif %}
+
+    <div>
+        {{ form.username }}
+        {% if form.username.errors %}
+            <p class="text-sm text-red-600 mt-1">{{ form.username.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <div>
+        {{ form.email }}
+        {% if form.email.errors %}
+            <p class="text-sm text-red-600 mt-1">{{ form.email.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <div>
+        {{ form.password1 }}
+        {% if form.password1.errors %}
+            <p class="text-sm text-red-600 mt-1">{{ form.password1.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <div>
+        {{ form.password2 }}
+        {% if form.password2.errors %}
+            <p class="text-sm text-red-600 mt-1">{{ form.password2.errors.0 }}</p>
+        {% endif %}
+    </div>
 
     <button
         class="w-full py-3 rounded-lg text-white font-medium
@@ -22,6 +50,7 @@
         Зарегистрироваться
     </button>
 </form>
+
 
 <p class="mt-6 text-sm text-slate-500">
     Уже есть аккаунт?
