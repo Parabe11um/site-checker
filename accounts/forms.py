@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import AuthenticationForm
 
 User = get_user_model()
 
@@ -9,7 +10,6 @@ BASE_INPUT_CLASSES = (
     "border border-slate-300 "
     "focus:ring-2 focus:ring-blue-500 focus:outline-none"
 )
-
 
 class RegisterForm(forms.ModelForm):
     username = forms.CharField(
@@ -72,3 +72,20 @@ class RegisterForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+class LoginForm(AuthenticationForm):
+    username = forms.CharField(
+        label="Email или логин",
+        widget=forms.TextInput(attrs={
+            "class": BASE_INPUT_CLASSES,
+            "placeholder": "Email или логин",
+        })
+    )
+
+    password = forms.CharField(
+        label="Пароль",
+        widget=forms.PasswordInput(attrs={
+            "class": BASE_INPUT_CLASSES,
+            "placeholder": "Пароль",
+        })
+    )

@@ -11,7 +11,7 @@ from django.core.mail import send_mail
 from django.contrib.auth.decorators import login_required
 
 from .models import User
-from .forms import RegisterForm
+from .forms import RegisterForm, LoginForm
 
 
 class RegisterView(View):
@@ -60,10 +60,11 @@ class ActivateView(View):
 
 class LoginView(View):
     def get(self, request):
-        return render(request, "accounts/login.html", {"form": AuthenticationForm()})
+        form = LoginForm()
+        return render(request, "accounts/login.html", {"form": form})
 
     def post(self, request):
-        form = AuthenticationForm(request, data=request.POST)
+        form = LoginForm(request, data=request.POST)
         if form.is_valid():
             login(request, form.get_user())
             return redirect("/")
