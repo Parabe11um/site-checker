@@ -12,14 +12,6 @@ BASE_INPUT_CLASSES = (
 )
 
 class RegisterForm(forms.ModelForm):
-    username = forms.CharField(
-        label="Имя пользователя",
-        widget=forms.TextInput(attrs={
-            "class": BASE_INPUT_CLASSES,
-            "placeholder": "Имя пользователя",
-        })
-    )
-
     email = forms.EmailField(
         label="Email",
         required=True,
@@ -47,7 +39,7 @@ class RegisterForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["username", "email"]
+        fields = ["email"]
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
@@ -63,14 +55,17 @@ class RegisterForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.email = self.cleaned_data["email"]
-        user.set_password(self.cleaned_data["password1"])
 
-        # 🔒 задел под подтверждение email
-        user.is_active = False
+        email = self.cleaned_data["email"].lower()
+
+        user.email = email
+        user.username = email          # 🔥 КЛЮЧЕВО
+        user.set_password(self.cleaned_data["password1"])
+        user.is_active = False         # для подтверждения email
 
         if commit:
             user.save()
+
         return user
 
 class LoginForm(AuthenticationForm):

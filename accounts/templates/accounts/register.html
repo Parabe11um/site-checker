@@ -17,13 +17,6 @@
     {% endif %}
 
     <div>
-        {{ form.username }}
-        {% if form.username.errors %}
-            <p class="text-sm text-red-600 mt-1">{{ form.username.errors.0 }}</p>
-        {% endif %}
-    </div>
-
-    <div>
         {{ form.email }}
         {% if form.email.errors %}
             <p class="text-sm text-red-600 mt-1">{{ form.email.errors.0 }}</p>
