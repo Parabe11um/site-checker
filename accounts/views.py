@@ -34,7 +34,7 @@ class RegisterView(View):
                 "token": default_token_generator.make_token(user),
             })
 
-            send_mail(subject, message, "noreply@checkyweb.ru", [user.email])
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
 
             return render(request, "accounts/check_email.html")
 
