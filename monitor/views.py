@@ -235,36 +235,36 @@ def site_delete(request, pk):
 # ======================================================
 @login_required
 def telegram_settings_view(request):
-    settings_obj, _ = TelegramSettings.objects.get_or_create(
-        user=request.user
-    )
+    settings_obj = TelegramSettings.objects.filter(user=request.user).first()
 
     if request.method == "POST":
 
-        # --- Кнопка "Отправить тест" ---
-        if "send_test" in request.POST:
+        # 🔴 Отключить Telegram
+        if "disconnect_telegram" in request.POST:
+            TelegramSettings.objects.filter(user=request.user).delete()
+            messages.success(request, "Telegram-уведомления отключены")
+            return redirect("telegram_settings")
+
+        # 🧪 Тест
+        if "send_test" in request.POST and settings_obj:
             send_telegram(
                 request.user,
                 "✅ Тестовое сообщение от Site-Checker"
             )
-            messages.success(
-                request,
-                "Тестовое сообщение отправлено в Telegram"
-            )
+            messages.success(request, "Тестовое сообщение отправлено")
             return redirect("telegram_settings")
 
-        # --- Сохранение формы ---
         form = TelegramSettingsForm(
             request.POST,
             instance=settings_obj
         )
 
         if form.is_valid():
-            form.save()
-            messages.success(
-                request,
-                "Telegram-настройки сохранены"
-            )
+            telegram = form.save(commit=False)
+            telegram.user = request.user
+            telegram.save()
+
+            messages.success(request, "Telegram-настройки сохранены")
             return redirect("telegram_settings")
 
     else:

@@ -4,19 +4,33 @@
     <meta charset="UTF-8">
     <title>{% block title %}Site Checker{% endblock %}</title>
 
-{% load static %}
-<link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
 
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-100">
-<div class="max-w-6xl mx-auto py-10 px-4">
-    <!-- NAVBAR -->
-    {% include "monitor/components/navbar.html" %}
 
-    {% block content %}{% endblock %}
-    {% block scripts %}{% endblock %}
+<body class="min-h-screen bg-slate-50">
+    <!-- мягкий градиентный фон, как на лендинге -->
+    <div class="min-h-screen relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-0">
+            <div class="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-purple-200/50 blur-3xl"></div>
+            <div class="absolute top-10 right-0 h-[520px] w-[520px] rounded-full bg-sky-200/55 blur-3xl"></div>
+            <div class="absolute bottom-0 left-1/4 h-[520px] w-[520px] rounded-full bg-pink-200/45 blur-3xl"></div>
+        </div>
 
-</div>
+        <div class="relative">
+            <!-- NAVBAR -->
+            {% include "monitor/components/navbar.html" %}
+
+            <main class="px-4 sm:px-6 lg:px-8 py-6">
+              <div class="mx-auto w-full max-w-7xl">
+                {% block content %}{% endblock %}
+              </div>
+            </main>
+
+            {% block scripts %}{% endblock %}
+        </div>
+    </div>
 </body>
 </html>

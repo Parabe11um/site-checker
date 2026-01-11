@@ -146,10 +146,33 @@ class TelegramSettings(models.Model):
         related_name="telegram_settings"
     )
 
-    token = models.CharField(max_length=200)
-    chat_id = models.CharField(max_length=50)
+    token = models.CharField(max_length=200, blank=True)
+    chat_id = models.CharField(max_length=50, blank=True)
     is_active = models.BooleanField(default=True)
+
     notify_down = models.BooleanField(default=True)
     notify_up = models.BooleanField(default=True)
     notify_timeout = models.BooleanField(default=True)
+
+    # 🆕 Email
+    email_enabled = models.BooleanField(
+        default=False,
+        verbose_name="Отправлять уведомления на email"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+    @property
+    def is_configured(self):
+        """
+        Есть ли минимальная конфигурация
+        """
+        return bool(self.token and self.chat_id)
+
+    @property
+    def is_connected(self):
+        """
+        Telegram реально подключён и работает
+        """
+        return self.is_active and self.is_configured

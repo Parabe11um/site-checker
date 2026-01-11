@@ -2,54 +2,91 @@
 {% load static %}
 
 {% block title %}Добавить сайт{% endblock %}
-{% block header_title %}Добавление сайта{% endblock %}
 
 {% block content %}
 
-<div class="max-w-lg mx-auto bg-white shadow p-6 rounded-xl">
+<section class="min-h-[70vh] flex items-center justify-center px-4">
 
-    <form method="post" class="space-y-4">
-        {% csrf_token %}
+    <div
+            class="w-full max-w-md
+               bg-white/70 backdrop-blur-xl
+               border border-white/60
+               shadow-[0_30px_80px_-40px_rgba(30,64,175,0.25)]
+               rounded-3xl p-8 sm:p-10"
+    >
 
-        {% if form.non_field_errors %}
-            <div class="p-3 bg-red-100 text-red-700 rounded">
+        <!-- Заголовок -->
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-semibold text-slate-900">
+                Добавить сайт
+            </h1>
+            <p class="mt-2 text-sm text-slate-600">
+                Укажите сайт, который нужно отслеживать
+            </p>
+        </div>
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="p-3 rounded-xl bg-red-100/70 text-red-700 text-sm">
                 {{ form.non_field_errors }}
             </div>
-        {% endif %}
+            {% endif %}
 
-        <!-- Поле: название -->
-        <div>
-            <label class="block text-sm font-medium mb-1">Название сайта</label>
+            <!-- Название сайта -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    Название сайта
+                </label>
+
             {{ form.name }}
-
             {% if form.name.errors %}
-                <p class="text-red-600 text-sm mt-1">
-                    {{ form.name.errors.0 }}
-                </p>
+              <p class="text-red-600 text-xs mt-1">{{ form.name.errors.0 }}</p>
             {% endif %}
-        </div>
+            </div>
 
-        <div>
-            <label class="block text-sm font-medium mb-1">URL</label>
+            <!-- URL -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                    URL
+                </label>
+
             {{ form.url }}
-
             {% if form.url.errors %}
-                <p class="text-red-600 text-sm mt-1">
-                    {{ form.url.errors.0 }}
-                </p>
+              <p class="text-red-600 text-xs mt-1">{{ form.url.errors.0 }}</p>
             {% endif %}
-        </div>
+            </div>
 
-        <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
-            Добавить сайт
-        </button>
 
-        <a href="{% url 'home' %}" class="block text-center text-gray-600 mt-3 hover:underline">
-            ← Назад к списку сайтов
-        </a>
+            <!-- Кнопка -->
+            <button
+                    class="w-full mt-2 inline-flex items-center justify-center gap-2
+                       rounded-2xl px-6 py-3.5
+                       text-white font-semibold text-base
+                       bg-gradient-to-r from-blue-500 to-violet-500
+                       shadow-[0_18px_44px_-22px_rgba(59,130,246,0.85)]
+                       hover:shadow-[0_26px_60px_-26px_rgba(139,92,246,0.9)]
+                       hover:-translate-y-0.5 active:translate-y-0
+                       transition"
+            >
+                <span class="text-xl leading-none">＋</span>
+                Добавить сайт
+            </button>
 
-    </form>
+            <!-- Назад -->
+            <div class="pt-2 text-center">
+                <a
+                        href="{% url 'home' %}"
+                        class="text-sm text-slate-500 hover:text-slate-700 transition"
+                >
+                    ← Назад к списку сайтов
+                </a>
+            </div>
+        </form>
 
-</div>
+    </div>
+
+</section>
 
 {% endblock %}

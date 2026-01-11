@@ -6,21 +6,68 @@
 
 {% block content %}
 
-<a href="{% url 'home' %}" class="text-blue-600 hover:underline text-sm">
-    ← Назад
-</a>
+<section class="mb-10">
+  <div class="
+      rounded-3xl
+      bg-white/70 backdrop-blur-xl
+      border border-white/60
+      shadow-[0_30px_80px_-40px_rgba(30,64,175,0.25)]
+      p-6 sm:p-8
+      flex flex-col gap-4
+  ">
 
-<button data-check-url="{% url 'site_check_now' site.pk %}"
-        class="check-btn px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition mt-3">
-    Проверить
-</button>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-900">
+          {{ site.display_name|default:site.url }}
+        </h1>
 
-<p class="mt-3 mb-3">
-    <strong>URL:</strong>
-    <a href="{{ site.url }}" class="text-blue-600 hover:underline" target="_blank">
-        {{ site.url }}
-    </a>
-</p>
+        <a href="{{ site.url }}" target="_blank"
+           class="text-sm text-blue-600 hover:underline break-all">
+          {{ site.url }}
+        </a>
+      </div>
+
+      {% if site.last_status_code and site.last_status_code < 300 %}
+        <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
+          🟢 Доступен
+        </span>
+      {% elif site.last_status_code %}
+        <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
+          🔴 Недоступен
+        </span>
+      {% else %}
+        <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+          ⏳ Нет данных
+        </span>
+      {% endif %}
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+      <span>
+        Последняя проверка:
+        {{ site.last_checked_at|default:"—" }}
+      </span>
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <button data-check-url="{% url 'site_check_now' site.pk %}"
+              class="check-btn px-5 py-2 rounded-xl
+                     bg-gradient-to-r from-blue-500 to-violet-500
+                     text-white font-semibold cursor-pointer
+                     shadow hover:shadow-lg transition">
+        Проверить сейчас
+      </button>
+
+      <a href="{% url 'home' %}"
+         class="px-5 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
+        ← К списку сайтов
+      </a>
+    </div>
+
+  </div>
+</section>
+
 
 <!-- 🟦 Три верхних блока -->
 <div class="grid md:grid-cols-3 gap-6 mt-6">

@@ -1,45 +1,59 @@
 <div class="max-w-7xl mx-auto px-4">
     <div class="flex items-center justify-end gap-3 h-14">
 
-        {% if request.user.is_authenticated %}
-            {% with tg=request.user.telegram_settings %}
-                {% if tg and tg.is_active %}
-                    <a href="{% url 'telegram_settings' %}"
-                       class="px-4 py-2 text-sm rounded-lg
-                              bg-green-100 text-green-700
-                              hover:bg-green-200 transition">
-                        Telegram ✓
-                    </a>
-                {% elif tg %}
-                    <a href="{% url 'telegram_settings' %}"
-                       class="px-4 py-2 text-sm rounded-lg
-                              bg-yellow-100 text-yellow-700
-                              hover:bg-yellow-200 transition">
-                        Telegram ⚠
-                    </a>
-                {% else %}
-                    <a href="{% url 'telegram_settings' %}"
-                       class="px-4 py-2 text-sm rounded-lg
-                              bg-gray-100 text-gray-700
-                              hover:bg-gray-200 transition">
-                        Telegram
-                    </a>
-                {% endif %}
-            {% endwith %}
+    {% if request.user.is_authenticated %}
+        {% with tg=request.user.telegram_settings %}
+            {% if tg and tg.is_connected %}
+                <!-- 🟢 Telegram подключён -->
+                <a href="{% url 'telegram_settings' %}"
+                   class="inline-flex items-center gap-2
+                          px-4 py-2 text-sm font-medium rounded-full
+                          bg-green-100 text-green-700
+                          hover:bg-green-200 transition">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    Telegram подключён
+                </a>
 
-            <a href="{% url 'site_create' %}"
-               class="px-4 py-2 text-sm rounded-lg
-                      bg-blue-600 text-white
-                      hover:bg-blue-700 transition">
-                Добавить сайт
-            </a>
+            {% elif tg and tg.is_configured %}
+                <!-- 🟡 Telegram настроен, но выключен -->
+                <a href="{% url 'telegram_settings' %}"
+                   class="inline-flex items-center gap-2
+                          px-4 py-2 text-sm font-medium rounded-full
+                          bg-yellow-100 text-yellow-700
+                          hover:bg-yellow-200 transition">
+                    <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    Telegram выключен
+                </a>
 
-            <a href="{% url 'logout' %}"
-               class="px-4 py-2 text-sm rounded-lg
-                      text-red-600 hover:bg-red-50 transition">
-                Выйти
-            </a>
-        {% endif %}
+            {% else %}
+                <!-- 🔴 Telegram не подключён -->
+                <a href="{% url 'telegram_settings' %}"
+                   class="inline-flex items-center gap-2
+                          px-4 py-2 text-sm font-medium rounded-full
+                          bg-red-100 text-red-700
+                          hover:bg-red-200 transition">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    Telegram не подключён
+                </a>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Добавить сайт -->
+        <a href="{% url 'site_create' %}"
+           class="px-4 py-2 text-sm rounded-lg
+                  bg-blue-600 text-white
+                  hover:bg-blue-700 transition">
+            Добавить сайт
+        </a>
+
+        <!-- Выход -->
+        <a href="{% url 'logout' %}"
+           class="px-4 py-2 text-sm rounded-lg
+                  text-red-600 hover:bg-red-50 transition">
+            Выйти
+        </a>
+    {% endif %}
+
 
     </div>
 </div>

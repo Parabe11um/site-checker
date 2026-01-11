@@ -3,54 +3,100 @@
 
 {% block title %}Мониторинг сайтов{% endblock %}
 
-{% block header_title %}
-Мониторинг сайтов
-{% endblock %}
-
 {% block content %}
 
-    <!-- Карточки статистики -->
-    {% include "monitor/components/stats_cards.html" %}
+{# если сайтов нет — показываем красивый экран с кнопкой #}
+{% if not sites or sites|length == 0 %}
 
-    <!-- Таблица -->
-    <div class="bg-white shadow rounded-xl overflow-hidden">
+<section class="min-h-[78vh] flex flex-col items-center justify-center text-center px-4">
+
+    <!-- Иллюстрация с плавным растворением краёв -->
+    <div
+        class="w-full max-w-[1100px] h-[520px] sm:h-[560px] bg-center bg-no-repeat bg-contain
+               drop-shadow-[0_40px_100px_rgba(30,64,175,0.18)]"
+        style="
+            background-image: url('{% static 'images/dashboard_bg.png' %}');
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 58%, rgba(0,0,0,0) 92%);
+            mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 58%, rgba(0,0,0,0) 92%);
+        "
+    ></div>
+
+    <h1 class="mt-2 text-3xl sm:text-4xl font-semibold text-slate-900">
+        Вы еще не добавили сайты
+    </h1>
+
+    <p class="mt-3 text-slate-600">
+        Добавьте сайт для мониторинга его доступности и быстродействия
+    </p>
+
+    <div class="mt-7">
+        <a
+            href="{% url 'site_create' %}"
+            class="inline-flex items-center justify-center gap-2 rounded-2xl px-8 py-4
+                   text-white font-semibold text-lg
+                   bg-gradient-to-r from-blue-500 to-violet-500
+                   shadow-[0_22px_55px_-28px_rgba(59,130,246,0.85)]
+                   hover:-translate-y-0.5 transition"
+        >
+            <span class="text-2xl leading-none">＋</span>
+            Добавить сайт
+        </a>
+    </div>
+
+</section>
+
+{% else %}
+
+
+<div class="max-w-6xl mx-auto px-4">
+
+<!-- Карточки статистики -->
+{% include "monitor/components/stats_cards.html" %}
+
+<!-- Таблица -->
+    <div class="mt-6 bg-white/70 backdrop-blur-xl border border-white/60 shadow-[0_20px_60px_-30px_rgba(30,64,175,0.18)] rounded-3xl overflow-hidden">
+    <div class="overflow-x-auto">
         <table class="min-w-full">
-            <thead class="bg-gray-50">
-            <tr>
-                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Название</th>
-                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Статус</th>
-                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Время ответа</th>
-                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">SSL</th>
-                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Домен (дней осталось)</th>
-                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700">Последняя проверка</th>
-                <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Проверить</th>
-                <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Подробнее</th>
-                <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Удалить</th>
+            <thead class="bg-white/40">
+            <tr class="text-slate-600">
+                <th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide">Название</th>
+                <th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-wide">Статус</th>
+                <th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-wide">Время ответа</th>
+                <th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-wide">SSL</th>
+                <th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-wide">Домен</th>
+                <th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-wide">Последняя проверка</th>
+                <th class="px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide">Проверить</th>
+                <th class="px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide">Подробнее</th>
+                <th class="px-4 py-4 text-right text-xs font-semibold uppercase tracking-wide">Удалить</th>
             </tr>
             </thead>
 
-            <tbody class="divide-y divide-gray-200">
+            <tbody class="divide-y divide-slate-200/70">
             {% for site in sites %}
-                {% if site.last_status_code < 300 %}
-                    {% with "text-green-600" as status_color %}
-                        {% include "monitor/components/table_row.html" %}
-                    {% endwith %}
-                {% elif site.last_status_code < 500 %}
-                    {% with "text-yellow-600" as status_color %}
-                        {% include "monitor/components/table_row.html" %}
-                    {% endwith %}
-                {% else %}
-                    {% with "text-red-600" as status_color %}
-                        {% include "monitor/components/table_row.html" %}
-                    {% endwith %}
-                {% endif %}
+            {% if site.last_status_code < 300 %}
+            {% with "text-emerald-600" as status_color %}
+            {% include "monitor/components/table_row.html" %}
+            {% endwith %}
+            {% elif site.last_status_code < 500 %}
+            {% with "text-amber-600" as status_color %}
+            {% include "monitor/components/table_row.html" %}
+            {% endwith %}
+            {% else %}
+            {% with "text-rose-600" as status_color %}
+            {% include "monitor/components/table_row.html" %}
+            {% endwith %}
+            {% endif %}
             {% endfor %}
             </tbody>
         </table>
     </div>
+</div>
+</div>
+
+{% endif %}
 
 {% endblock %}
 
 {% block scripts %}
-    <script src="{% static 'js/script.js' %}"></script>
+<script src="{% static 'js/script.js' %}"></script>
 {% endblock %}

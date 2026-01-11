@@ -12,6 +12,8 @@ from sitechecker.telegram import send_telegram
 import tldextract
 import subprocess
 import re
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 # -----------------------------
@@ -170,30 +172,34 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
 
             # 🔴 Падение сайта
             if prev == 200 and curr >= 500 and tg.notify_down:
-                send_telegram(
-                    user,
-                    f"🚨 <b>Сайт упал</b>\n{name}\n{site.url}"
+                notify_user(
+                    user=user,
+                    subject="🚨 Сайт упал",
+                    message=f"🚨 Сайт упал\n{name}\n{site.url}"
                 )
 
             # 🟢 Восстановление после падения
             elif prev >= 500 and curr == 200 and tg.notify_up:
-                send_telegram(
-                    user,
-                    f"✅ <b>Сайт восстановлен</b>\n{name}"
+                notify_user(
+                    user=user,
+                    subject="✅ Сайт восстановлен",
+                    message=f"✅ Сайт восстановлен\n{name}"
                 )
 
             # ⚠️ Таймаут
             elif curr == 0 and prev not in (0, None) and tg.notify_timeout:
-                send_telegram(
-                    user,
-                    f"⚠️ <b>Timeout</b>\n{name}\n{error_text}"
+                notify_user(
+                    user=user,
+                    subject="⚠️ Таймаут",
+                    message=f"⚠️ Таймаут\n{name}\n{error_text}"
                 )
 
             # 🟢 Восстановление после таймаута
             elif prev == 0 and curr == 200 and tg.notify_up:
-                send_telegram(
-                    user,
-                    f"✅ <b>Сайт восстановился</b>\n{name}"
+                notify_user(
+                    user=user,
+                    subject="✅ Сайт восстановился",
+                    message=f"✅ Сайт восстановился\n{name}"
                 )
 
     # ------------ SSL CHECK ------------
@@ -240,3 +246,26 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     )
 
     return site
+
+def notify_user(user, subject: str, message: str):
+    """
+    Унифицированная отправка уведомлений:
+    - Telegram (если включён)
+    - Email (если включён)
+    """
+
+    tg = getattr(user, "telegram_settings", None)
+
+    # --- TELEGRAM ---
+    if tg and tg.is_active:
+        send_telegram(user, message)
+
+    # --- EMAIL ---
+    if getattr(user, "email", None):
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )

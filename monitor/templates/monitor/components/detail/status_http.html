@@ -1,13 +1,21 @@
 <!-- HTTP -->
-<div class="bg-white rounded-xl shadow p-4">
-    <h2 class="text-xl font-semibold mb-3">HTTP статус</h2>
-    <p><strong>Код:</strong> {{ site.last_status_code|default:"—" }}</p>
-    <p><strong>Время ответа:</strong>
-        {% if site.last_response_time %}
-        {{ site.last_response_time }} c
-        {% else %}
-        —
-        {% endif %}
-    </p>
-    <p><strong>Последняя проверка:</strong> {{ site.last_checked_at|default:"—" }}</p>
+<div class="bg-white rounded-2xl shadow-sm p-5">
+  <h3 class="text-sm uppercase tracking-wide text-slate-500 mb-3">
+    HTTP статус
+  </h3>
+
+  <div class="text-3xl font-semibold text-slate-900">
+    {{ site.last_status_code|default:"—" }}
+  </div>
+
+  <div class="mt-2 text-sm text-slate-600">
+    Время ответа:
+    {% if site.last_response_time %}
+      {{ site.last_response_time }} c
+    {% else %} — {% endif %}
+  </div>
+
+  <div class="mt-1 text-xs text-slate-400">
+    Проверено: {{ site.last_checked_at|default:"—" }}
+  </div>
 </div>
