@@ -29,9 +29,9 @@ class SiteListView(LoginRequiredMixin, ListView):
     login_url = "/login/"
 
     def get_queryset(self):
-        if self.request.user.is_superuser or self.request.user.role == "admin":
-            return UserSite.objects.select_related("site").all()
-        return UserSite.objects.select_related("site").filter(user=self.request.user)
+        return UserSite.objects.select_related("site").filter(
+            user=self.request.user
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
