@@ -23,3 +23,47 @@
 .animate-auth-text {
     animation: authTextFade 0.9s ease-out forwards;
 }
+
+/* Общий стиль карточки */
+.auth-banner {
+    max-width: 420px;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.auth-banner h2 {
+    font-size: 1.875rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.auth-banner p {
+    margin-top: 0.75rem;
+    font-size: 1rem;
+    color: #475569;
+}
+
+/* Анимация появления */
+@keyframes authFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Каскад */
+.animate-auth-1 { animation: authFadeUp 0.8s ease-out 0.2s forwards; }
+.animate-auth-2 { animation: authFadeUp 0.8s ease-out 0.6s forwards; }
+.animate-auth-3 { animation: authFadeUp 0.8s ease-out 1.0s forwards; }
+.animate-auth-4 { animation: authFadeUp 0.8s ease-out 1.4s forwards; }
+.animate-auth-5 { animation: authFadeUp 0.8s ease-out 1.8s forwards; }
