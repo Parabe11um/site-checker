@@ -86,6 +86,12 @@ class Site(models.Model):
     url = models.URLField(unique=True)
     normalized_url = models.CharField(max_length=255, unique=True, editable=False)
 
+    ip_address = models.GenericIPAddressField(
+        "IP адрес сайта",
+        null=True,
+        blank=True
+    )
+
     # Последнее состояние
     last_status_code = models.IntegerField(null=True, blank=True)
     last_response_time = models.FloatField(null=True, blank=True)

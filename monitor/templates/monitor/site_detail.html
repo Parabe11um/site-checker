@@ -26,6 +26,13 @@
            class="text-sm text-blue-600 hover:underline break-all">
           {{ site.url }}
         </a>
+
+        {% if site.ip_address %}
+          <div class="text-xs text-slate-400 mt-1">
+            IP: <span class="font-mono text-slate-600">{{ site.ip_address }}</span>
+          </div>
+        {% endif %}
+
       </div>
 
       {% if site.last_status_code and site.last_status_code < 300 %}

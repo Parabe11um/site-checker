@@ -14,7 +14,7 @@ import subprocess
 import re
 from django.core.mail import send_mail
 from django.conf import settings
-
+from urllib.parse import urlparse
 
 # -----------------------------
 #  EXTRACT ROOT DOMAIN
@@ -139,6 +139,16 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     snippet = ""
     error_text = ""
 
+    parsed = urlparse(site.url)
+    hostname = parsed.hostname
+
+    ip_address = None
+    if hostname:
+        try:
+            ip_address = socket.gethostbyname(hostname)
+        except Exception:
+            ip_address = None
+
     try:
         response = requests.get(site.url, timeout=timeout)
         status_code = response.status_code
@@ -222,6 +232,7 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     site.last_content_snippet = snippet
     site.last_error = error_text
     site.last_checked_at = timezone.now()
+    site.ip_address = ip_address
 
     # SSL
     site.ssl_valid_from = ssl_info["valid_from"]
