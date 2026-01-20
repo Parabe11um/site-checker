@@ -1,4 +1,5 @@
 from django import forms
+from urllib.parse import urlparse
 from .models import TelegramSettings
 
 
@@ -7,13 +8,19 @@ BASE_INPUT_CLASSES = (
     "text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
 )
 
+FORBIDDEN_HOSTS = {
+    "localhost",
+    "127.0.0.1",
+    "::1",
+    "0.0.0.0",
+}
 
 class AddSiteForm(forms.Form):
     name = forms.CharField(
         label="Название сайта",
         max_length=255,
         widget=forms.TextInput(attrs={
-            "class": "border rounded px-3 py-2 w-full",
+            "class": BASE_INPUT_CLASSES,
             "placeholder": "Например: Мой сайт",
         })
     )
@@ -21,8 +28,10 @@ class AddSiteForm(forms.Form):
     url = forms.URLField(
         label="URL",
         widget=forms.URLInput(attrs={
-            "class": "border rounded px-3 py-2 w-full",
-            "placeholder": "https://example.com",
+            "class": BASE_INPUT_CLASSES,
+            "placeholder": "example.ru",
+            "inputmode": "url",
+            "autocomplete": "url",
         })
     )
 
@@ -30,7 +39,19 @@ class AddSiteForm(forms.Form):
         url = self.cleaned_data["url"].strip()
 
         if not url.startswith(("http://", "https://")):
-            raise forms.ValidationError("URL должен начинаться с http:// или https://")
+            url = "https://" + url
+
+        parsed = urlparse(url)
+        host = parsed.hostname
+
+        if not host:
+            raise forms.ValidationError("Введите корректный URL")
+
+        if host in FORBIDDEN_HOSTS:
+            raise forms.ValidationError("Локальные адреса запрещены")
+
+        if host.endswith(".local"):
+            raise forms.ValidationError("Домены .local запрещены")
 
         return url
 
@@ -54,27 +75,3 @@ class TelegramSettingsForm(forms.ModelForm):
                 "class": "border rounded px-3 py-2 w-full",
             }),
         }
-
-class AddSiteForm(forms.Form):
-    name = forms.CharField(
-        label="Название сайта",
-        max_length=255,
-        widget=forms.TextInput(attrs={
-            "class": BASE_INPUT_CLASSES,
-            "placeholder": "Например: Мой сайт",
-        })
-    )
-
-    url = forms.URLField(
-        label="URL",
-        widget=forms.URLInput(attrs={
-            "class": BASE_INPUT_CLASSES,
-            "placeholder": "https://example.com",
-        })
-    )
-
-    def clean_url(self):
-        url = self.cleaned_data["url"].strip()
-        if not url.startswith(("http://", "https://")):
-            raise forms.ValidationError("URL должен начинаться с http:// или https://")
-        return url

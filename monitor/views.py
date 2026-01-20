@@ -12,7 +12,7 @@ import pytz
 
 from .models import Site, UserSite, TelegramSettings
 from .forms import AddSiteForm
-from .services import check_site
+from monitor.services import check_site
 from .forms import TelegramSettingsForm
 from django.views.decorators.csrf import csrf_exempt
 
@@ -224,6 +224,11 @@ def site_create(request):
                 defaults={"name": name}
             )
 
+            try:
+                check_site(site)
+            except Exception as e:
+                print("Initial site check failed:", e)
+
             return redirect("home")
     else:
         form = AddSiteForm()
@@ -231,6 +236,7 @@ def site_create(request):
     return render(request, "monitor/site_create.html", {
         "form": form
     })
+
 
 
 
