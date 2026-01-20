@@ -98,6 +98,30 @@
       </span>
     </div>
 
+    <div class="flex flex-wrap gap-6 text-sm text-slate-600 mt-2">
+
+      {% if site.avg_response_time %}
+        <div>
+          Среднее время отклика:
+          <span class="font-semibold text-slate-800">
+            {{ site.avg_response_time|floatformat:3 }} c
+          </span>
+        </div>
+      {% endif %}
+
+      {% if site.median_response_time %}
+        <div>
+          Медиана:
+          <span class="font-semibold text-slate-800">
+            {{ site.median_response_time|floatformat:3 }} c
+          </span>
+        </div>
+      {% endif %}
+
+    </div>
+
+
+
     <div class="flex gap-3 pt-2">
       <button data-check-url="{% url 'site_check_now' site.pk %}"
               class="check-btn px-5 py-2 rounded-xl

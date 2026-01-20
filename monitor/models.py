@@ -118,6 +118,20 @@ class Site(models.Model):
     # Последнее состояние
     last_status_code = models.IntegerField(null=True, blank=True)
     last_response_time = models.FloatField(null=True, blank=True)
+
+    avg_response_time = models.FloatField(
+        "Среднее время отклика (сек.)",
+        null=True,
+        blank=True
+    )
+
+    median_response_time = models.FloatField(
+        "Медианное время отклика (сек.)",
+        null=True,
+        blank=True
+    )
+
+
     last_checked_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
 

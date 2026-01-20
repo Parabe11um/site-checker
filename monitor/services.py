@@ -16,6 +16,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from urllib.parse import urlparse
 from datetime import timedelta
+from django.db.models import Avg
+from statistics import median
 
 # -----------------------------
 #  EXTRACT ROOT DOMAIN
@@ -267,6 +269,29 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
         content_snippet=snippet,
         error=error_text,
     )
+
+    qs = site.checks.filter(response_time__isnull=False)
+
+    # Среднее (SQL)
+    site.avg_response_time = qs.aggregate(
+        avg=Avg("response_time")
+    )["avg"]
+
+    # Медиана (Python, с ограничением)
+    MEDIAN_LIMIT = 1000
+
+    times = list(
+        qs.order_by("-checked_at")
+        .values_list("response_time", flat=True)[:MEDIAN_LIMIT]
+    )
+    times.sort()
+
+    site.median_response_time = median(times) if times else None
+
+    site.save(update_fields=[
+        "avg_response_time",
+        "median_response_time",
+    ])
 
     return site
 

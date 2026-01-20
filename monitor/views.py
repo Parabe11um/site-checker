@@ -19,6 +19,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from sitechecker.telegram import send_telegram
 
+from django.db.models import Avg
+from statistics import median
+
 
 # ======================================================
 #        СПИСОК САЙТОВ (замена HomeView)
@@ -78,7 +81,27 @@ class WebsiteDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         site = self.object
 
+        # ================================
+        #  Среднее и медиана отклика
+        # ================================
+        response_times_qs = site.checks.filter(
+            response_time__isnull=False
+        ).values_list("response_time", flat=True)
+
+        # Среднее (через SQL)
+        context["avg_response_time"] = (
+            response_times_qs.aggregate(avg=Avg("response_time"))["avg"]
+        )
+
+        # Медиана (через Python)
+        response_times = list(response_times_qs)
+        context["median_response_time"] = (
+            median(response_times) if response_times else None
+        )
+
+        # ================================
         # История проверок
+        # ================================
         context["history"] = site.checks.all()[:20]
 
         now = timezone.now()

@@ -7,13 +7,20 @@
         {{ site.last_status_code|default:"—" }}
     </td>
 
-    <td class="response-time px-4 py-4 text-center text-sm text-slate-700">
-        {% if site.last_response_time %}
-            {{ site.last_response_time }} c
-        {% else %}
-            —
+    <td class="px-4 py-4 text-center text-sm text-slate-700 leading-tight">
+      {% if site.last_response_time %}
+        <div>{{ site.last_response_time|floatformat:2 }} c</div>
+
+        {% if site.median_response_time %}
+          <div class="text-xs text-slate-400">
+            med {{ site.median_response_time|floatformat:2 }}
+          </div>
         {% endif %}
+      {% else %}
+        —
+      {% endif %}
     </td>
+
 
     <td class="px-4 py-4 text-center text-sm">
         {% if site.ssl_status == "OK" %}
