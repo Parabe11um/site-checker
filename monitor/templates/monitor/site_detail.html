@@ -27,11 +27,52 @@
           {{ site.url }}
         </a>
 
-        {% if site.ip_address %}
-          <div class="text-xs text-slate-400 mt-1">
-            IP: <span class="font-mono text-slate-600">{{ site.ip_address }}</span>
+      {% if site.ip_address %}
+        <div class="mt-1 text-xs text-slate-500 space-y-0.5">
+
+          <div>
+            IP:
+            <span class="font-mono text-slate-700">
+              {{ site.ip_address }}
+            </span>
           </div>
-        {% endif %}
+
+          {% if site.ip_provider %}
+            <div class="flex items-center gap-2">
+              <span>Провайдер:</span>
+              <span class="text-slate-700">
+                {{ site.ip_provider }}
+              </span>
+
+              {% if site.ip_country %}
+                <span class="text-slate-400">
+                  ({{ site.ip_country }})
+                </span>
+              {% endif %}
+            </div>
+
+            {% if site.ipinfo_updated_at %}
+              <div class="text-[11px] text-slate-400">
+                данные обновлены:
+                {{ site.ipinfo_updated_at|date:"d.m.Y H:i" }}
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="flex items-center gap-2 text-slate-400">
+              <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10"
+                        stroke="currentColor" stroke-width="4" fill="none" />
+                <path class="opacity-75" fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
+              </svg>
+              <span>Определяем провайдера…</span>
+            </div>
+          {% endif %}
+
+        </div>
+      {% endif %}
+
 
       </div>
 

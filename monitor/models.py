@@ -92,6 +92,29 @@ class Site(models.Model):
         blank=True
     )
 
+    ip_provider = models.CharField(
+        "Провайдер / организация",
+        max_length=255,
+        blank=True
+    )
+
+    ip_asn = models.CharField(
+        "ASN",
+        max_length=50,
+        blank=True
+    )
+
+    ip_country = models.CharField(
+        "Страна",
+        max_length=2,
+        blank=True
+    )
+
+    ipinfo_updated_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
     # Последнее состояние
     last_status_code = models.IntegerField(null=True, blank=True)
     last_response_time = models.FloatField(null=True, blank=True)

@@ -15,6 +15,7 @@ import re
 from django.core.mail import send_mail
 from django.conf import settings
 from urllib.parse import urlparse
+from datetime import timedelta
 
 # -----------------------------
 #  EXTRACT ROOT DOMAIN
@@ -149,6 +150,9 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
         except Exception:
             ip_address = None
 
+    old_ip = site.ip_address
+    ip_changed = ip_address is not None and ip_address != old_ip
+
     try:
         response = requests.get(site.url, timeout=timeout)
         status_code = response.status_code
@@ -216,7 +220,7 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     if curr == 0:
         ssl_info = {
             "valid_from": None, "valid_to": None,
-            "days_left": None, "status": "NO_SSL_CHECK"
+            "days_left": None, "status": "Нет данных"
         }
     else:
         ssl_info = check_ssl_certificate(site.url)
@@ -246,6 +250,14 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     site.domain_status = domain_info["status"]
 
     site.save()
+
+    needs_refresh = (
+            not site.ipinfo_updated_at or
+            site.ipinfo_updated_at < timezone.now() - timedelta(days=7)
+    )
+
+    if (ip_changed or needs_refresh) and site.ip_address:
+        enrich_ipinfo(site)
 
     # История
     SiteCheck.objects.create(
@@ -280,3 +292,38 @@ def notify_user(user, subject: str, message: str):
             recipient_list=[user.email],
             fail_silently=True,
         )
+
+
+def get_ipinfo(ip: str) -> dict:
+    try:
+        r = requests.get(
+            f"https://ipinfo.io/{ip}/json",
+            timeout=5
+        )
+        data = r.json()
+
+        return {
+            "provider": data.get("org"),
+            "country": data.get("country"),
+        }
+    except Exception:
+        return {}
+
+
+def enrich_ipinfo(site: Site):
+    if not site.ip_address:
+        return
+
+    data = get_ipinfo(site.ip_address)
+    if not data:
+        return
+
+    site.ip_provider = data.get("provider", "")
+    site.ip_country = data.get("country", "")
+    site.ipinfo_updated_at = timezone.now()
+
+    site.save(update_fields=[
+        "ip_provider",
+        "ip_country",
+        "ipinfo_updated_at"
+    ])
