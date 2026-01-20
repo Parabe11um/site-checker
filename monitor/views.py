@@ -9,16 +9,14 @@ from django.utils import timezone
 from datetime import timedelta
 import datetime
 import pytz
-
 from .models import Site, UserSite, TelegramSettings
 from .forms import AddSiteForm
 from monitor.services import check_site
 from .forms import TelegramSettingsForm
 from django.views.decorators.csrf import csrf_exempt
-
 from django.contrib import messages
 from sitechecker.telegram import send_telegram
-
+from urllib.parse import urlparse
 from django.db.models import Avg
 from statistics import median
 
@@ -207,7 +205,6 @@ def dashboard_status_api(request):
 def site_list(request):
     return redirect("/")  # заменяем на SiteListView
 
-
 @login_required
 def site_create(request):
     if request.method == "POST":
@@ -216,7 +213,26 @@ def site_create(request):
             name = form.cleaned_data["name"]
             url = form.cleaned_data["url"]
 
-            site, _ = Site.objects.get_or_create(url=url)
+            parsed = urlparse(url)
+            host = parsed.netloc.lower()
+
+            if host.startswith("www."):
+                host = host[4:]
+
+            host = host.split(":")[0]
+            site = Site.objects.filter(normalized_url=host).first()
+
+            if site:
+                if UserSite.objects.filter(user=request.user, site=site).exists():
+                    form.add_error(
+                        "url",
+                        "Этот сайт уже добавлен в ваш список"
+                    )
+                    return render(request, "monitor/site_create.html", {
+                        "form": form
+                    })
+
+            site = site or Site.objects.create(url=url)
 
             UserSite.objects.get_or_create(
                 user=request.user,
@@ -224,10 +240,7 @@ def site_create(request):
                 defaults={"name": name}
             )
 
-            try:
-                check_site(site)
-            except Exception as e:
-                print("Initial site check failed:", e)
+            check_site(site)
 
             return redirect("home")
     else:
@@ -236,6 +249,7 @@ def site_create(request):
     return render(request, "monitor/site_create.html", {
         "form": form
     })
+
 
 
 

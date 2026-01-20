@@ -147,14 +147,22 @@ class Site(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        if not self.normalized_url:
-            parsed = urlparse(self.url)
+        parsed = urlparse(self.url)
 
-            if not parsed.netloc:
-                raise ValueError(f"Invalid URL for normalization: {self.url}")
+        host = parsed.netloc.lower()
 
-            self.normalized_url = parsed.netloc.lower()
+        if not host:
+            parsed = urlparse("https://" + self.url)
+            host = parsed.netloc.lower()
 
+        if not host:
+            raise ValueError(f"Invalid URL for normalization: {self.url}")
+
+        if host.startswith("www."):
+            host = host[4:]
+
+        host = host.split(":")[0]
+        self.normalized_url = host
         super().save(*args, **kwargs)
 
 

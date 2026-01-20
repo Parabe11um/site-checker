@@ -7,7 +7,7 @@
 {% block content %}
 
 <section class="mb-10">
-  <div class="
+    <div class="
       rounded-3xl
       bg-white/70 backdrop-blur-xl
       border border-white/60
@@ -16,152 +16,211 @@
       flex flex-col gap-4
   ">
 
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-semibold text-slate-900">
-          {{ site.display_name|default:site.url }}
-        </h1>
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-semibold text-slate-900">
+                    {{ site.display_name|default:site.url }}
+                </h1>
 
-        <a href="{{ site.url }}" target="_blank"
-           class="text-sm text-blue-600 hover:underline break-all">
-          {{ site.url }}
-        </a>
+                <a href="{{ site.url }}" target="_blank"
+                   class="text-sm text-blue-600 hover:underline break-all">
+                    {{ site.url }}
+                </a>
 
-      {% if site.ip_address %}
-        <div class="mt-1 text-xs text-slate-500 space-y-0.5">
+                {% if site.ip_address %}
+                <div class="mt-1 text-xs text-slate-500 space-y-0.5">
 
-          <div>
-            IP:
-            <span class="font-mono text-slate-700">
+                    <div>
+                        IP:
+                        <span class="font-mono text-slate-700">
               {{ site.ip_address }}
             </span>
-          </div>
+                    </div>
 
-          {% if site.ip_provider %}
-            <div class="flex items-center gap-2">
-              <span>Провайдер:</span>
-              <span class="text-slate-700">
+                    {% if site.ip_provider %}
+                    <div class="flex items-center gap-2">
+                        <span>Провайдер:</span>
+                        <span class="text-slate-700">
                 {{ site.ip_provider }}
               </span>
 
-              {% if site.ip_country %}
-                <span class="text-slate-400">
+                        {% if site.ip_country %}
+                        <span class="text-slate-400">
                   ({{ site.ip_country }})
                 </span>
-              {% endif %}
+                        {% endif %}
+                    </div>
+
+                    {% if site.ipinfo_updated_at %}
+                    <div class="text-[11px] text-slate-400">
+                        данные обновлены:
+                        {{ site.ipinfo_updated_at|date:"d.m.Y H:i" }}
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="flex items-center gap-2 text-slate-400">
+                        <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10"
+                                    stroke="currentColor" stroke-width="4" fill="none"/>
+                            <path class="opacity-75" fill="currentColor"
+                                  d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"/>
+                        </svg>
+                        <span>Определяем провайдера…</span>
+                    </div>
+                    {% endif %}
+
+                </div>
+                {% endif %}
+
+
             </div>
 
-            {% if site.ipinfo_updated_at %}
-              <div class="text-[11px] text-slate-400">
-                данные обновлены:
-                {{ site.ipinfo_updated_at|date:"d.m.Y H:i" }}
-              </div>
-            {% endif %}
-
-          {% else %}
-            <div class="flex items-center gap-2 text-slate-400">
-              <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10"
-                        stroke="currentColor" stroke-width="4" fill="none" />
-                <path class="opacity-75" fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
-              </svg>
-              <span>Определяем провайдера…</span>
-            </div>
-          {% endif %}
-
-        </div>
-      {% endif %}
-
-
-      </div>
-
-      {% if site.last_status_code and site.last_status_code < 300 %}
-        <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
+            {% if site.last_status_code and site.last_status_code < 300 %}
+            <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
           🟢 Доступен
         </span>
-      {% elif site.last_status_code %}
-        <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
+            {% elif site.last_status_code %}
+            <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
           🔴 Недоступен
         </span>
-      {% else %}
-        <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+            {% else %}
+            <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
           ⏳ Нет данных
         </span>
-      {% endif %}
-    </div>
+            {% endif %}
+        </div>
 
-    <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
       <span>
         Последняя проверка:
         {{ site.last_checked_at|default:"—" }}
       </span>
-    </div>
+        </div>
 
-    <div class="flex flex-wrap gap-6 text-sm text-slate-600 mt-2">
+        <div class="flex flex-wrap gap-6 text-sm text-slate-600 mt-2">
 
-      {% if site.avg_response_time %}
-        <div>
-          Среднее время отклика:
-          <span class="font-semibold text-slate-800">
+            {% if site.avg_response_time %}
+            <div>
+                Среднее время отклика:
+                <span class="font-semibold text-slate-800">
             {{ site.avg_response_time|floatformat:3 }} c
           </span>
-        </div>
-      {% endif %}
+            </div>
+            {% endif %}
 
-      {% if site.median_response_time %}
-        <div>
-          Медиана:
-          <span class="font-semibold text-slate-800">
+            {% if site.median_response_time %}
+            <div>
+                Медиана:
+                <span class="font-semibold text-slate-800">
             {{ site.median_response_time|floatformat:3 }} c
           </span>
+            </div>
+            {% endif %}
+
         </div>
-      {% endif %}
-
-    </div>
 
 
-
-    <div class="flex gap-3 pt-2">
-      <button data-check-url="{% url 'site_check_now' site.pk %}"
-              class="check-btn px-5 py-2 rounded-xl
+        <div class="flex gap-3 pt-2">
+            <button data-check-url="{% url 'site_check_now' site.pk %}"
+                    class="check-btn px-5 py-2 rounded-xl
                      bg-gradient-to-r from-blue-500 to-violet-500
                      text-white font-semibold cursor-pointer
                      shadow hover:shadow-lg transition">
-        Проверить сейчас
-      </button>
+                Проверить сейчас
+            </button>
 
-      <a href="{% url 'home' %}"
-         class="px-5 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
-        ← К списку сайтов
-      </a>
+            <a href="{% url 'home' %}"
+               class="px-5 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
+                ← К списку сайтов
+            </a>
+        </div>
+
     </div>
-
-  </div>
 </section>
 
 
-<!-- 🟦 Три верхних блока -->
-<div class="grid md:grid-cols-3 gap-6 mt-6">
-    {% include "monitor/components/detail/status_http.html" %}
-    {% include "monitor/components/detail/status_ssl.html" %}
-    {% include "monitor/components/detail/status_domain.html" %}
+<!-- Tabs navigation -->
+<div class="mt-8 border-b border-slate-200">
+    <nav class="flex gap-6 text-sm font-medium">
+        <button data-tab="main"
+          class="tab-btn text-slate-500 hover:text-slate-700 pb-3">
+            Основное
+        </button>
+        <button
+                class="tab-btn text-slate-400 pb-3
+         opacity-50 cursor-not-allowed pointer-events-none"
+                title="Скоро будет доступно">
+            HTTP-запросы
+        </button>
+        <button
+                class="tab-btn text-slate-400 pb-3
+         opacity-50 cursor-not-allowed pointer-events-none"
+                title="Скоро будет доступно">
+            Страницы сайта
+        </button>
+        <button
+                class="tab-btn text-slate-400 pb-3
+         opacity-50 cursor-not-allowed pointer-events-none"
+                title="Скоро будет доступно">
+            SEO
+        </button>
+
+    </nav>
 </div>
 
-<!-- Uptime карточки -->
-{% include "monitor/components/detail/uptime_cards.html" %}
+<div class="tab-content mt-6" data-tab-content="main">
+    <!-- 🟦 Три верхних блока -->
+    <div class="grid md:grid-cols-3 gap-6 mt-6">
+        {% include "monitor/components/detail/status_http.html" %}
+        {% include "monitor/components/detail/status_ssl.html" %}
+        {% include "monitor/components/detail/status_domain.html" %}
+    </div>
 
-<!-- Ошибки -->
-{% include "monitor/components/detail/errors_block.html" %}
+    <!-- Uptime карточки -->
+    {% include "monitor/components/detail/uptime_cards.html" %}
 
-<!-- Фрагмент ответа -->
-{% include "monitor/components/detail/response_snippet.html" %}
+    <!-- Ошибки -->
+    {% include "monitor/components/detail/errors_block.html" %}
 
-<!-- Uptime Chart -->
-{% include "monitor/components/detail/uptime_chart.html" %}
+    <!-- Фрагмент ответа -->
+    {% include "monitor/components/detail/response_snippet.html" %}
 
-<!-- Response Time Chart -->
-{% include "monitor/components/detail/response_chart.html" %}
+    <!-- Uptime Chart -->
+    {% include "monitor/components/detail/uptime_chart.html" %}
+
+    <!-- Response Time Chart -->
+    {% include "monitor/components/detail/response_chart.html" %}
+
+</div>
+
+<div class="tab-content mt-6 hidden" data-tab-content="pages">
+    <div class="rounded-2xl bg-white p-6 border border-slate-200">
+        <h3 class="text-lg font-semibold mb-2">Страницы сайта</h3>
+        <p class="text-sm text-slate-500">
+            Здесь будет список страниц, их статус, время ответа и SEO-метрики.
+        </p>
+    </div>
+</div>
+
+<div class="tab-content mt-6 hidden" data-tab-content="seo">
+    <div class="rounded-2xl bg-white p-6 border border-slate-200">
+        <h3 class="text-lg font-semibold mb-2">SEO</h3>
+        <p class="text-sm text-slate-500">
+            Метатеги, индексация, canonical, robots, sitemap и базовые SEO-проверки.
+        </p>
+    </div>
+</div>
+
+<div class="tab-content mt-6 hidden" data-tab-content="http">
+    <div class="rounded-2xl bg-white p-6 border border-slate-200">
+        <h3 class="text-lg font-semibold mb-2">HTTP-запросы</h3>
+        <p class="text-sm text-slate-500">
+            Заголовки, редиректы, цепочки ответов, коды статусов.
+        </p>
+    </div>
+</div>
+
 
 {% endblock %}
 
@@ -194,78 +253,108 @@
                 });
             });
     });
-    </script>
+</script>
 
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", () => {
 
-    document.querySelectorAll(".check-btn").forEach(btn => {
+        document.querySelectorAll(".check-btn").forEach(btn => {
 
-        btn.addEventListener("click", async function (e) {
-            e.preventDefault();
+            btn.addEventListener("click", async function (e) {
+                e.preventDefault();
 
-            const url = this.dataset.checkUrl;
+                const url = this.dataset.checkUrl;
 
-            this.innerHTML = `
-                <svg class="animate-spin h-4 w-4 text-white inline-block" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10"
-                        stroke="currentColor" stroke-width="4" fill="none"></circle>
-                    <path class="opacity-75" fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z">
-                    </path>
-                </svg>
-                Проверка…
-            `;
-            this.disabled = true;
+                this.innerHTML = `
+                    <svg class="animate-spin h-4 w-4 text-white inline-block" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                            stroke="currentColor" stroke-width="4" fill="none"></circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z">
+                        </path>
+                    </svg>
+                    Проверка…
+                `;
+                this.disabled = true;
 
-            try {
-                await fetch(url, { method: "GET" });
-                location.reload();
-            } catch (err) {
-                alert("Ошибка проверки сайта");
-            }
+                try {
+                    await fetch(url, { method: "GET" });
+                    location.reload();
+                } catch (err) {
+                    alert("Ошибка проверки сайта");
+                }
+            });
+
         });
 
     });
-
-});
 </script>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    const history = [
-        {% for h in history reversed %}
-            {
-                t: "{{ h.checked_at|date:'H:i' }}",
-                ok: {% if h.status_code == 200 %}1{% else %}0{% endif %},
-                code: "{{ h.status_code }}"
+    document.addEventListener("DOMContentLoaded", () => {
+        const history = [
+            {% for h in history reversed %}
+                {
+                    t: "{{ h.checked_at|date:'H:i' }}",
+                    ok: {% if h.status_code == 200 %}1{% else %}0{% endif %},
+                    code: "{{ h.status_code }}"
+                },
+            {% endfor %}
+        ];
+
+        const ctx = document.getElementById("uptimeChart").getContext("2d");
+
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: history.map(x => x.t),
+                datasets: [{
+                    label: "Доступность",
+                    data: history.map(x => x.ok),
+                    borderWidth: 1,
+                    backgroundColor: history.map(x =>
+                        x.ok ? "rgba(34,197,94,0.7)" : "rgba(239,68,68,0.7)"
+                    ),
+                }]
             },
-        {% endfor %}
-    ];
-
-    const ctx = document.getElementById("uptimeChart").getContext("2d");
-
-    new Chart(ctx, {
-        type: "bar",
-        data: {
-            labels: history.map(x => x.t),
-            datasets: [{
-                label: "Доступность",
-                data: history.map(x => x.ok),
-                borderWidth: 1,
-                backgroundColor: history.map(x =>
-                    x.ok ? "rgba(34,197,94,0.7)" : "rgba(239,68,68,0.7)"
-                ),
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true, max: 1 },
+            options: {
+                scales: {
+                    y: { beginAtZero: true, max: 1 },
+                }
             }
-        }
+        });
     });
-});
 </script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const buttons = document.querySelectorAll(".tab-btn");
+      const contents = document.querySelectorAll("[data-tab-content]");
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const tab = btn.dataset.tab;
+
+          // buttons
+          buttons.forEach(b => {
+            b.classList.remove("border-blue-500", "text-blue-600");
+            b.classList.add("text-slate-500");
+          });
+
+          btn.classList.add("border-blue-500", "text-blue-600");
+          btn.classList.remove("text-slate-500");
+
+          // contents
+          contents.forEach(c => {
+            c.classList.toggle("hidden", c.dataset.tabContent !== tab);
+          });
+        });
+      });
+    });
+</script>
+
+
 {% endblock %}

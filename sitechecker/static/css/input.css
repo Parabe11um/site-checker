@@ -9,6 +9,26 @@
 /* (опционально) глобальные стили */
 
 
+  .text-page-title {
+    @apply text-2xl font-semibold text-slate-900;
+  }
+
+  .text-section-title {
+    @apply text-lg font-semibold text-slate-900;
+  }
+
+  .text-primary {
+    @apply text-sm text-slate-700;
+  }
+
+  .text-secondary {
+    @apply text-sm text-slate-500;
+  }
+
+  .text-meta {
+    @apply text-xs text-slate-400;
+  }
+
 @keyframes authTextFade {
     0% {
         opacity: 0;
