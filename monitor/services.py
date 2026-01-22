@@ -6,7 +6,7 @@ from monitor.models import Site, UserSite, TelegramSettings
 from monitor.models_check import SiteCheck
 import ssl
 import socket
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from sitechecker.telegram import send_telegram
 import tldextract
@@ -15,12 +15,12 @@ import re
 from django.core.mail import send_mail
 from django.conf import settings
 from urllib.parse import urlparse
-from datetime import timedelta
 from django.db.models import Avg
 from statistics import median
 
+
 # -----------------------------
-#  EXTRACT ROOT DOMAIN
+#  HELPERS
 # -----------------------------
 def extract_domain(url: str) -> str:
     ext = tldextract.extract(url)
@@ -29,8 +29,42 @@ def extract_domain(url: str) -> str:
     return ext.registered_domain or url
 
 
+def format_error_message(
+    *,
+    title: str,
+    site_name: str,
+    url: str,
+    status_code=None,
+    response_time=None,
+    error_text=None,
+    snippet=None,
+) -> str:
+    lines = [
+        title,
+        "",
+        site_name,
+        url,
+    ]
+
+    if status_code is not None:
+        lines.append(f"HTTP статус: {status_code}")
+
+    if response_time:
+        lines.append(f"Время отклика: {response_time:.2f} c")
+
+    if error_text:
+        lines.append(f"Ошибка: {error_text}")
+
+    if snippet:
+        lines.append("")
+        lines.append("Фрагмент ответа:")
+        lines.append(textwrap.shorten(snippet, 500))
+
+    return "\n".join(lines)
+
+
 # -----------------------------
-#  CHECK DOMAIN EXPIRATION
+#  DOMAIN EXPIRATION
 # -----------------------------
 def check_domain_expiration(url: str) -> dict:
     root_domain = extract_domain(url)
@@ -55,27 +89,18 @@ def check_domain_expiration(url: str) -> dict:
             match = re.search(p, data, re.IGNORECASE)
             if match:
                 raw = match.group(1).strip()
-
-                # ----- TRY MULTIPLE FORMATS -----
                 for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d", "%d.%m.%Y"):
                     try:
-                        expiration = datetime.strptime(raw, fmt)
-                        expiration = expiration.replace(tzinfo=pytz.UTC)
+                        expiration = datetime.strptime(raw, fmt).replace(tzinfo=pytz.UTC)
                         break
-                    except:
+                    except ValueError:
                         continue
                 break
 
         if not expiration:
-            return {
-                "expiration": None,
-                "days_left": None,
-                "status": "WHOIS_PARSE_ERROR",
-                "raw": data,
-            }
+            return {"expiration": None, "days_left": None, "status": "WHOIS_PARSE_ERROR"}
 
-        now = datetime.now(pytz.UTC)
-        days_left = (expiration - now).days
+        days_left = (expiration - datetime.now(pytz.UTC)).days
 
         if days_left < 0:
             status = "EXPIRED"
@@ -90,19 +115,14 @@ def check_domain_expiration(url: str) -> dict:
             "expiration": expiration,
             "days_left": days_left,
             "status": status,
-            "raw": data,
         }
 
     except Exception as e:
-        return {
-            "expiration": None,
-            "days_left": None,
-            "status": f"ERROR: {e}",
-        }
+        return {"expiration": None, "days_left": None, "status": f"ERROR: {e}"}
 
 
 # -----------------------------
-#  CHECK SSL
+#  SSL CHECK
 # -----------------------------
 def check_ssl_certificate(url: str) -> dict:
     hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
@@ -125,16 +145,11 @@ def check_ssl_certificate(url: str) -> dict:
         }
 
     except Exception as e:
-        return {
-            "valid_from": None,
-            "valid_to": None,
-            "days_left": None,
-            "status": f"ERROR: {e}",
-        }
+        return {"valid_from": None, "valid_to": None, "days_left": None, "status": f"ERROR: {e}"}
 
 
 # -----------------------------
-#  MAIN WEBSITE CHECK
+#  MAIN CHECK
 # -----------------------------
 def check_site(site: Site, timeout: float = 30.0) -> Site:
     status_code = None
@@ -150,29 +165,26 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
         try:
             ip_address = socket.gethostbyname(hostname)
         except Exception:
-            ip_address = None
+            pass
 
     old_ip = site.ip_address
-    ip_changed = ip_address is not None and ip_address != old_ip
+    ip_changed = ip_address and ip_address != old_ip
 
     try:
         response = requests.get(site.url, timeout=timeout)
         status_code = response.status_code
         response_time = response.elapsed.total_seconds()
-        snippet = textwrap.shorten(response.text, width=2000, placeholder=" ...")
+        snippet = response.text
 
         if status_code >= 500:
-            error_text = f"Server error {status_code}"
+            error_text = response.reason
 
     except RequestException as e:
         status_code = 0
         error_text = str(e)
 
-    prev = site.last_status_code
+    prev = site.last_status_code or 200
     curr = status_code
-
-    if prev is None:
-        prev = 200
 
     if prev != curr:
         subscriptions = UserSite.objects.filter(site=site, notify_enabled=True)
@@ -180,88 +192,68 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
         for sub in subscriptions:
             user = sub.user
             name = sub.name or site.url
-
             tg = getattr(user, "telegram_settings", None)
 
             if not tg or not tg.is_active:
                 continue
 
-            # 🔴 Падение сайта
+            # 🔴 DOWN
             if prev == 200 and curr >= 500 and tg.notify_down:
-                notify_user(
-                    user=user,
-                    subject="🚨 Сайт упал",
-                    message=f"🚨 Сайт упал\n{name}\n{site.url}"
+                msg = format_error_message(
+                    title="🚨 Сайт недоступен",
+                    site_name=name,
+                    url=site.url,
+                    status_code=curr,
+                    response_time=response_time,
+                    error_text=error_text,
+                    snippet=snippet,
                 )
+                notify_user(user, "Сайт недоступен", msg)
 
-            # 🟢 Восстановление после падения
+            # ⚠️ TIMEOUT
+            elif curr == 0 and prev != 0 and tg.notify_timeout:
+                msg = format_error_message(
+                    title="⚠️ Таймаут запроса",
+                    site_name=name,
+                    url=site.url,
+                    error_text=error_text,
+                )
+                notify_user(user, "Таймаут запроса", msg)
+
+            # 🟢 RECOVERED
             elif prev >= 500 and curr == 200 and tg.notify_up:
                 notify_user(
-                    user=user,
-                    subject="✅ Сайт восстановлен",
-                    message=f"✅ Сайт восстановлен\n{name}"
+                    user,
+                    "Сайт восстановлен",
+                    f"✅ Сайт восстановлен\n\n{name}\n{site.url}"
                 )
 
-            # ⚠️ Таймаут
-            elif curr == 0 and prev not in (0, None) and tg.notify_timeout:
-                notify_user(
-                    user=user,
-                    subject="⚠️ Таймаут",
-                    message=f"⚠️ Таймаут\n{name}\n{error_text}"
-                )
-
-            # 🟢 Восстановление после таймаута
-            elif prev == 0 and curr == 200 and tg.notify_up:
-                notify_user(
-                    user=user,
-                    subject="✅ Сайт восстановился",
-                    message=f"✅ Сайт восстановился\n{name}"
-                )
-
-    # ------------ SSL CHECK ------------
-    if curr == 0:
-        ssl_info = {
-            "valid_from": None, "valid_to": None,
-            "days_left": None, "status": "Нет данных"
-        }
-    else:
-        ssl_info = check_ssl_certificate(site.url)
-
-    # ------------ DOMAIN CHECK ------------
+    # ---- SSL / DOMAIN ----
+    ssl_info = check_ssl_certificate(site.url) if curr != 0 else {}
     domain_info = check_domain_expiration(site.url)
-
-    # ------------ UPDATE DB ------------
-    from django.utils import timezone
 
     site.last_status_code = curr
     site.last_response_time = response_time
-    site.last_content_snippet = snippet
+    site.last_content_snippet = textwrap.shorten(snippet, 2000)
     site.last_error = error_text
     site.last_checked_at = timezone.now()
     site.ip_address = ip_address
 
-    # SSL
-    site.ssl_valid_from = ssl_info["valid_from"]
-    site.ssl_valid_to = ssl_info["valid_to"]
-    site.ssl_days_left = ssl_info["days_left"]
-    site.ssl_status = ssl_info["status"]
+    site.ssl_valid_from = ssl_info.get("valid_from")
+    site.ssl_valid_to = ssl_info.get("valid_to")
+    site.ssl_days_left = ssl_info.get("days_left")
+    site.ssl_status = ssl_info.get("status")
 
-    # Domain
-    site.domain_expiration = domain_info["expiration"]
-    site.domain_days_left = domain_info["days_left"]
-    site.domain_status = domain_info["status"]
+    site.domain_expiration = domain_info.get("expiration")
+    site.domain_days_left = domain_info.get("days_left")
+    site.domain_status = domain_info.get("status")
 
     site.save()
 
-    needs_refresh = (
-            not site.ipinfo_updated_at or
-            site.ipinfo_updated_at < timezone.now() - timedelta(days=7)
-    )
-
-    if (ip_changed or needs_refresh) and site.ip_address:
+    if (ip_changed or not site.ipinfo_updated_at or
+        site.ipinfo_updated_at < timezone.now() - timedelta(days=7)):
         enrich_ipinfo(site)
 
-    # История
     SiteCheck.objects.create(
         site=site,
         status_code=curr,
@@ -272,43 +264,26 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
 
     qs = site.checks.filter(response_time__isnull=False)
 
-    # Среднее (SQL)
-    site.avg_response_time = qs.aggregate(
-        avg=Avg("response_time")
-    )["avg"]
+    site.avg_response_time = qs.aggregate(avg=Avg("response_time"))["avg"]
 
-    # Медиана (Python, с ограничением)
-    MEDIAN_LIMIT = 1000
-
-    times = list(
-        qs.order_by("-checked_at")
-        .values_list("response_time", flat=True)[:MEDIAN_LIMIT]
-    )
+    times = list(qs.order_by("-checked_at").values_list("response_time", flat=True)[:1000])
     times.sort()
-
     site.median_response_time = median(times) if times else None
 
-    site.save(update_fields=[
-        "avg_response_time",
-        "median_response_time",
-    ])
+    site.save(update_fields=["avg_response_time", "median_response_time"])
 
     return site
 
-def notify_user(user, subject: str, message: str):
-    """
-    Унифицированная отправка уведомлений:
-    - Telegram (если включён)
-    - Email (если включён)
-    """
 
+# -----------------------------
+#  NOTIFY
+# -----------------------------
+def notify_user(user, subject: str, message: str):
     tg = getattr(user, "telegram_settings", None)
 
-    # --- TELEGRAM ---
     if tg and tg.is_active:
         send_telegram(user, message)
 
-    # --- EMAIL ---
     if getattr(user, "email", None):
         send_mail(
             subject=subject,
@@ -319,18 +294,13 @@ def notify_user(user, subject: str, message: str):
         )
 
 
+# -----------------------------
+#  IP INFO
+# -----------------------------
 def get_ipinfo(ip: str) -> dict:
     try:
-        r = requests.get(
-            f"https://ipinfo.io/{ip}/json",
-            timeout=5
-        )
-        data = r.json()
-
-        return {
-            "provider": data.get("org"),
-            "country": data.get("country"),
-        }
+        r = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
+        return r.json()
     except Exception:
         return {}
 
@@ -343,12 +313,7 @@ def enrich_ipinfo(site: Site):
     if not data:
         return
 
-    site.ip_provider = data.get("provider", "")
+    site.ip_provider = data.get("org", "")
     site.ip_country = data.get("country", "")
     site.ipinfo_updated_at = timezone.now()
-
-    site.save(update_fields=[
-        "ip_provider",
-        "ip_country",
-        "ipinfo_updated_at"
-    ])
+    site.save(update_fields=["ip_provider", "ip_country", "ipinfo_updated_at"])
