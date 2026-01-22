@@ -2,7 +2,7 @@ import textwrap
 import requests
 from requests.exceptions import RequestException
 from django.utils import timezone
-from monitor.models import Site, UserSite, TelegramSettings
+from monitor.models import Site, UserSite
 from monitor.models_check import SiteCheck
 import ssl
 import socket
@@ -29,6 +29,22 @@ def extract_domain(url: str) -> str:
     return ext.registered_domain or url
 
 
+def classify_status(code: int | None) -> str:
+    if code is None:
+        return "unknown"
+    if code == 0:
+        return "timeout"
+    if 200 <= code < 300:
+        return "ok"
+    if 300 <= code < 400:
+        return "redirect"
+    if 400 <= code < 500:
+        return "client_error"
+    if 500 <= code < 600:
+        return "server_error"
+    return "unknown"
+
+
 def format_error_message(
     *,
     title: str,
@@ -38,6 +54,7 @@ def format_error_message(
     response_time=None,
     error_text=None,
     snippet=None,
+    redirect_to: str | None = None,
 ) -> str:
     lines = [
         title,
@@ -48,6 +65,9 @@ def format_error_message(
 
     if status_code is not None:
         lines.append(f"HTTP статус: {status_code}")
+
+    if redirect_to:
+        lines.append(f"Location: {redirect_to}")
 
     if response_time:
         lines.append(f"Время отклика: {response_time:.2f} c")
@@ -156,6 +176,7 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     response_time = None
     snippet = ""
     error_text = ""
+    redirect_to = None
 
     parsed = urlparse(site.url)
     hostname = parsed.hostname
@@ -171,13 +192,21 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     ip_changed = ip_address and ip_address != old_ip
 
     try:
-        response = requests.get(site.url, timeout=timeout)
+        # ВАЖНО: allow_redirects=False чтобы ловить 301/302/307/308
+        response = requests.get(site.url, timeout=timeout, allow_redirects=False)
         status_code = response.status_code
         response_time = response.elapsed.total_seconds()
-        snippet = response.text
 
-        if status_code >= 500:
-            error_text = response.reason
+        # Текст/сниппет может быть большим — держим в переменной как есть,
+        # но в БД будем сохранять короткую версию.
+        snippet = response.text or ""
+
+        # reason полезен для 3xx/4xx/5xx
+        if status_code >= 300:
+            error_text = response.reason or ""
+
+        if 300 <= status_code < 400:
+            redirect_to = response.headers.get("Location")
 
     except RequestException as e:
         status_code = 0
@@ -186,6 +215,13 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     prev = site.last_status_code or 200
     curr = status_code
 
+    prev_type = classify_status(prev)
+    curr_type = classify_status(curr)
+
+    # Уведомляем, когда:
+    # - статус-код изменился
+    # - и текущий статус НЕ ok
+    # - либо произошло восстановление (ok после не-ok)
     if prev != curr:
         subscriptions = UserSite.objects.filter(site=site, notify_enabled=True)
 
@@ -197,44 +233,44 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
             if not tg or not tg.is_active:
                 continue
 
-            # 🔴 DOWN
-            if prev == 200 and curr >= 500 and tg.notify_down:
+            # ✅ восстановление
+            if curr_type == "ok" and prev_type != "ok" and tg.notify_up:
+                notify_user(
+                    user,
+                    "Сайт восстановлен",
+                    f"✅ Сайт восстановлен\n\n{name}\n{site.url}"
+                )
+                continue
+
+            # если текущий не ok — шлём уведомление (в формате с кодом и текстом)
+            if curr_type != "ok" and tg.notify_down:
+                if curr_type in ("server_error", "timeout"):
+                    title = "🚨 Ошибка сайта"
+                    subj = "Ошибка сайта"
+                else:
+                    # redirect / client_error / unknown
+                    title = "⚠️ Проблема с сайтом"
+                    subj = "Проблема с сайтом"
+
                 msg = format_error_message(
-                    title="🚨 Сайт недоступен",
+                    title=title,
                     site_name=name,
                     url=site.url,
                     status_code=curr,
                     response_time=response_time,
                     error_text=error_text,
                     snippet=snippet,
+                    redirect_to=redirect_to,
                 )
-                notify_user(user, "Сайт недоступен", msg)
+                notify_user(user, subj, msg)
 
-            # ⚠️ TIMEOUT
-            elif curr == 0 and prev != 0 and tg.notify_timeout:
-                msg = format_error_message(
-                    title="⚠️ Таймаут запроса",
-                    site_name=name,
-                    url=site.url,
-                    error_text=error_text,
-                )
-                notify_user(user, "Таймаут запроса", msg)
-
-            # 🟢 RECOVERED
-            elif prev >= 500 and curr == 200 and tg.notify_up:
-                notify_user(
-                    user,
-                    "Сайт восстановлен",
-                    f"✅ Сайт восстановлен\n\n{name}\n{site.url}"
-                )
-
-    # ---- SSL / DOMAIN ----
+    # ---- UPDATE SITE ----
     ssl_info = check_ssl_certificate(site.url) if curr != 0 else {}
     domain_info = check_domain_expiration(site.url)
 
     site.last_status_code = curr
     site.last_response_time = response_time
-    site.last_content_snippet = textwrap.shorten(snippet, 2000)
+    site.last_content_snippet = textwrap.shorten(snippet, 2000, placeholder=" ...")
     site.last_error = error_text
     site.last_checked_at = timezone.now()
     site.ip_address = ip_address
@@ -250,20 +286,19 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
 
     site.save()
 
-    if (ip_changed or not site.ipinfo_updated_at or
-        site.ipinfo_updated_at < timezone.now() - timedelta(days=7)):
+    if ip_changed or not site.ipinfo_updated_at or site.ipinfo_updated_at < timezone.now() - timedelta(days=7):
         enrich_ipinfo(site)
 
+    # История — тоже кладём короткий сниппет, чтобы не раздувать таблицу
     SiteCheck.objects.create(
         site=site,
         status_code=curr,
         response_time=response_time,
-        content_snippet=snippet,
+        content_snippet=textwrap.shorten(snippet, 2000, placeholder=" ..."),
         error=error_text,
     )
 
     qs = site.checks.filter(response_time__isnull=False)
-
     site.avg_response_time = qs.aggregate(avg=Avg("response_time"))["avg"]
 
     times = list(qs.order_by("-checked_at").values_list("response_time", flat=True)[:1000])
