@@ -8,130 +8,172 @@
 
 <section class="mb-10">
     <div class="
-      rounded-3xl
-      bg-white/70 backdrop-blur-xl
-      border border-white/60
-      shadow-[0_30px_80px_-40px_rgba(30,64,175,0.25)]
-      p-6 sm:p-8
-      flex flex-col gap-4
-  ">
+        rounded-3xl
+        bg-white/70 backdrop-blur-xl
+        border border-white/60
+        shadow-[0_30px_80px_-40px_rgba(30,64,175,0.25)]
+        p-6 sm:p-8
+        space-y-6
+    ">
 
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-semibold text-slate-900">
-                    {{ site.display_name|default:site.url }}
-                </h1>
+        <!-- TOP GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- SITE INFO -->
+            <div class="rounded-2xl bg-white/70 border border-slate-200 p-5 space-y-2">
+                <div class="flex items-start justify-between gap-3">
+                    <h1 class="text-xl font-semibold text-slate-900 break-all">
+                        {{ site.display_name|default:site.url }}
+                    </h1>
+
+                    {% if site.last_status_code and site.last_status_code < 300 %}
+                    <span class="
+                        inline-flex items-center
+                        px-2.5 py-0.5
+                        rounded-full
+                        text-xs font-medium
+                        bg-emerald-50
+                        text-emerald-700
+                        border border-emerald-200
+                    ">
+                        Доступен
+                    </span>
+                    {% elif site.last_status_code %}
+                    <span class="
+                        inline-flex items-center
+                        px-2.5 py-0.5
+                        rounded-full
+                        text-xs font-medium
+                        bg-rose-50
+                        text-rose-700
+                        border border-rose-200
+                    ">
+                        Недоступен
+                    </span>
+                    {% else %}
+                    <span class="
+                        inline-flex items-center
+                        px-2.5 py-0.5
+                        rounded-full
+                        text-xs font-medium
+                        bg-slate-100
+                        text-slate-600
+                        border border-slate-200
+                    ">
+                        Нет данных
+                    </span>
+                    {% endif %}
+                </div>
 
                 <a href="{{ site.url }}" target="_blank"
-                   class="text-sm text-blue-600 hover:underline break-all">
+                   class="text-sm text-blue-500 hover:text-blue-600 hover:underline break-all">
                     {{ site.url }}
                 </a>
 
                 {% if site.ip_address %}
-                <div class="mt-1 text-xs text-slate-500 space-y-0.5">
-
+                <div class="text-sm text-slate-500 space-y-1 pt-2">
                     <div>
-                        IP:
+                        IP-адрес:
                         <span class="font-mono text-slate-700">
-              {{ site.ip_address }}
-            </span>
+                            {{ site.ip_address }}
+                        </span>
                     </div>
 
                     {% if site.ip_provider %}
-                    <div class="flex items-center gap-2">
-                        <span>Провайдер:</span>
-                        <span class="text-slate-700">
-                {{ site.ip_provider }}
-              </span>
-
+                    <div>
+                        Провайдер:
+                        <span class="text-slate-600">
+                            {{ site.ip_provider }}
+                        </span>
                         {% if site.ip_country %}
                         <span class="text-slate-400">
-                  ({{ site.ip_country }})
-                </span>
+                            - ({{ site.ip_country }})
+                        </span>
                         {% endif %}
                     </div>
+                    {% endif %}
 
                     {% if site.ipinfo_updated_at %}
-                    <div class="text-[11px] text-slate-400">
-                        данные обновлены:
-                        {{ site.ipinfo_updated_at|date:"d.m.Y H:i" }}
+                    <div class="text-slate-400">
+                        <span class="text-slate-400">
+                            Дата и время обновления: {{ site.ipinfo_updated_at|date:"d.m.Y H:i" }}
+                        </span>
                     </div>
                     {% endif %}
+                </div>
+                {% endif %}
+            </div>
 
-                    {% else %}
-                    <div class="flex items-center gap-2 text-slate-400">
-                        <svg class="animate-spin h-3 w-3" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10"
-                                    stroke="currentColor" stroke-width="4" fill="none"/>
-                            <path class="opacity-75" fill="currentColor"
-                                  d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"/>
-                        </svg>
-                        <span>Определяем провайдера…</span>
+            <!-- RESPONSE -->
+            <div class="rounded-2xl bg-white/70 border border-slate-200 p-5 grid grid-cols-2 gap-4">
+                {% if site.avg_response_time %}
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-400">
+                        Средний отклик
                     </div>
-                    {% endif %}
-
+                    <div class="text-2xl font-semibold text-slate-900 leading-tight">
+                        {{ site.avg_response_time|floatformat:3 }} c
+                    </div>
                 </div>
                 {% endif %}
 
+                {% if site.median_response_time %}
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-400">
+                        Медиана
+                    </div>
+                    <div class="text-2xl font-semibold text-slate-900 leading-tight">
+                        {{ site.median_response_time|floatformat:3 }} c
+                    </div>
+                </div>
+                {% endif %}
 
+                <div>
+                    <div class="text-xs tracking-wide text-slate-400">
+                        Текущий HTTP-статус
+                    </div>
+                    <div class="text-2xl font-semibold text-slate-900 leading-tight">
+                        {{ site.last_status_code|default:"—" }}
+                    </div>
+                </div>
             </div>
 
-            {% if site.last_status_code and site.last_status_code < 300 %}
-            <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
-          🟢 Доступен
-        </span>
-            {% elif site.last_status_code %}
-            <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
-          🔴 Недоступен
-        </span>
-            {% else %}
-            <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
-          ⏳ Нет данных
-        </span>
-            {% endif %}
-        </div>
+            <!-- QUICK STATUS -->
+            <div class="rounded-2xl bg-white/70 border border-slate-200 p-5 space-y-3">
+                <div class="text-xs tracking-wide text-slate-400">
+                    Сводные данные
+                </div>
 
-        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-      <span>
-        Последняя проверка:
-        {{ site.last_checked_at|default:"—" }}
-      </span>
-        </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-600">SSL</span>
+                    <span class="text-sm font-medium text-emerald-700">OK</span>
+                </div>
 
-        <div class="flex flex-wrap gap-6 text-sm text-slate-600 mt-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-600">Домен</span>
+                    <span class="text-sm font-medium text-emerald-700">OK</span>
+                </div>
 
-            {% if site.avg_response_time %}
-            <div>
-                Среднее время отклика:
-                <span class="font-semibold text-slate-800">
-            {{ site.avg_response_time|floatformat:3 }} c
-          </span>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-slate-600">Мониторинг</span>
+                    <span class="text-sm font-medium text-emerald-700">Активен</span>
+                </div>
             </div>
-            {% endif %}
-
-            {% if site.median_response_time %}
-            <div>
-                Медиана:
-                <span class="font-semibold text-slate-800">
-            {{ site.median_response_time|floatformat:3 }} c
-          </span>
-            </div>
-            {% endif %}
 
         </div>
 
-
-        <div class="flex gap-3 pt-2">
+        <!-- ACTIONS -->
+        <div class="flex flex-col sm:flex-row gap-3 pt-2">
             <button data-check-url="{% url 'site_check_now' site.pk %}"
-                    class="check-btn px-5 py-2 rounded-xl
-                     bg-gradient-to-r from-blue-500 to-violet-500
-                     text-white font-semibold cursor-pointer
-                     shadow hover:shadow-lg transition">
+                    class="check-btn w-full sm:w-auto px-6 py-3 rounded-xl
+                    bg-gradient-to-r from-blue-500 to-violet-500
+                    text-white font-semibold shadow hover:shadow-lg transition">
                 Проверить сейчас
             </button>
 
             <a href="{% url 'home' %}"
-               class="px-5 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
+               class="w-full sm:w-auto px-6 py-3 rounded-xl border border-slate-300
+               text-center text-slate-700 hover:bg-slate-100 transition">
                 ← К списку сайтов
             </a>
         </div>
@@ -139,88 +181,37 @@
     </div>
 </section>
 
-
-<!-- Tabs navigation -->
+<!-- Tabs -->
 <div class="mt-8 border-b border-slate-200">
     <nav class="flex gap-6 text-sm font-medium">
-        <button data-tab="main"
-          class="tab-btn text-slate-500 hover:text-slate-700 pb-3">
+        <button data-tab="main" class="tab-btn text-slate-500 hover:text-slate-700 pb-3">
             Основное
         </button>
-        <button
-                class="tab-btn text-slate-400 pb-3
-         opacity-50 cursor-not-allowed pointer-events-none"
-                title="Скоро будет доступно">
+        <button class="tab-btn text-slate-400 pb-3 opacity-50 cursor-not-allowed">
             HTTP-запросы
         </button>
-        <button
-                class="tab-btn text-slate-400 pb-3
-         opacity-50 cursor-not-allowed pointer-events-none"
-                title="Скоро будет доступно">
+        <button class="tab-btn text-slate-400 pb-3 opacity-50 cursor-not-allowed">
             Страницы сайта
         </button>
-        <button
-                class="tab-btn text-slate-400 pb-3
-         opacity-50 cursor-not-allowed pointer-events-none"
-                title="Скоро будет доступно">
+        <button class="tab-btn text-slate-400 pb-3 opacity-50 cursor-not-allowed">
             SEO
         </button>
-
     </nav>
 </div>
 
 <div class="tab-content mt-6" data-tab-content="main">
-    <!-- 🟦 Три верхних блока -->
     <div class="grid md:grid-cols-3 gap-6 mt-6">
         {% include "monitor/components/detail/status_http.html" %}
         {% include "monitor/components/detail/status_ssl.html" %}
         {% include "monitor/components/detail/status_domain.html" %}
     </div>
 
-    <!-- Uptime карточки -->
     {% include "monitor/components/detail/uptime_cards.html" %}
-
-    <!-- Ошибки -->
     {% include "monitor/components/detail/errors_block.html" %}
-
-    <!-- Фрагмент ответа -->
     {% include "monitor/components/detail/response_snippet.html" %}
-
-    <!-- Uptime Chart -->
     {% include "monitor/components/detail/uptime_chart.html" %}
-
-    <!-- Response Time Chart -->
     {% include "monitor/components/detail/response_chart.html" %}
-
 </div>
-
-<div class="tab-content mt-6 hidden" data-tab-content="pages">
-    <div class="rounded-2xl bg-white p-6 border border-slate-200">
-        <h3 class="text-lg font-semibold mb-2">Страницы сайта</h3>
-        <p class="text-sm text-slate-500">
-            Здесь будет список страниц, их статус, время ответа и SEO-метрики.
-        </p>
-    </div>
-</div>
-
-<div class="tab-content mt-6 hidden" data-tab-content="seo">
-    <div class="rounded-2xl bg-white p-6 border border-slate-200">
-        <h3 class="text-lg font-semibold mb-2">SEO</h3>
-        <p class="text-sm text-slate-500">
-            Метатеги, индексация, canonical, robots, sitemap и базовые SEO-проверки.
-        </p>
-    </div>
-</div>
-
-<div class="tab-content mt-6 hidden" data-tab-content="http">
-    <div class="rounded-2xl bg-white p-6 border border-slate-200">
-        <h3 class="text-lg font-semibold mb-2">HTTP-запросы</h3>
-        <p class="text-sm text-slate-500">
-            Заголовки, редиректы, цепочки ответов, коды статусов.
-        </p>
-    </div>
-</div>
-
 
 {% endblock %}
 
