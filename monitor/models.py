@@ -81,7 +81,6 @@ class Website(models.Model):
 
         self.save()
 
-
 class Site(models.Model):
     url = models.URLField(unique=True)
     normalized_url = models.CharField(max_length=255, unique=True, editable=False)
@@ -165,7 +164,6 @@ class Site(models.Model):
         self.normalized_url = host
         super().save(*args, **kwargs)
 
-
 class UserSite(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -188,7 +186,6 @@ class UserSite(models.Model):
 
     def __str__(self):
         return f"{self.user} → {self.site.url}"
-
 
 class TelegramSettings(models.Model):
     user = models.OneToOneField(
@@ -227,3 +224,36 @@ class TelegramSettings(models.Model):
         Telegram реально подключён и работает
         """
         return self.is_active and self.is_configured
+
+class EmailSettings(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="email_settings"
+    )
+
+    is_active = models.BooleanField(
+        default=False,
+        verbose_name="Включить email-уведомления"
+    )
+
+    notify_down = models.BooleanField(
+        default=True,
+        verbose_name="Падение сайта"
+    )
+
+    notify_up = models.BooleanField(
+        default=True,
+        verbose_name="Восстановление сайта"
+    )
+
+    notify_timeout = models.BooleanField(
+        default=True,
+        verbose_name="Таймаут / недоступен"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Email settings for {self.user}"

@@ -1,0 +1,122 @@
+{% extends "monitor/base.html" %}
+
+{% block title %}Email-уведомления — Site Checker{% endblock %}
+
+{% block content %}
+
+<div class="max-w-3xl mx-auto">
+
+    <div class="
+        rounded-3xl
+        bg-white/70 backdrop-blur-xl
+        border border-white/60
+        shadow-[0_30px_80px_-40px_rgba(30,64,175,0.25)]
+        p-6 sm:p-8
+    ">
+
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-semibold text-slate-900">
+                    Email-уведомления
+                </h1>
+                <p class="mt-2 text-sm text-slate-500">
+                    Управление уведомлениями о состоянии сайтов на email
+                </p>
+            </div>
+
+            {% if settings and settings.is_active %}
+                <span class="
+                    inline-flex items-center gap-2
+                    px-4 py-2 text-sm font-medium rounded-full
+                    bg-green-100 text-green-700
+                ">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    Email включён
+                </span>
+            {% else %}
+                <span class="
+                    inline-flex items-center gap-2
+                    px-4 py-2 text-sm font-medium rounded-full
+                    bg-red-100 text-red-700
+                ">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    Email выключен
+                </span>
+            {% endif %}
+        </div>
+
+        <form method="post" class="mt-8 space-y-6">
+            {% csrf_token %}
+
+            <div class="rounded-2xl border border-slate-200 bg-white/70 p-5">
+                <div class="text-sm text-slate-500">
+                    Текущий email
+                </div>
+                <div class="mt-1 text-base font-medium text-slate-900">
+                    {{ request.user.email|default:"Email не указан" }}
+                </div>
+            </div>
+
+            <div>
+                <div class="text-sm font-semibold text-slate-700 mb-3">
+                    Типы уведомлений
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="flex items-center gap-3 rounded-xl border border-slate-300 px-4 py-3 bg-white">
+                        {{ form.notify_down }}
+                        <span class="text-sm text-slate-700">Падение сайта</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 rounded-xl border border-slate-300 px-4 py-3 bg-white">
+                        {{ form.notify_up }}
+                        <span class="text-sm text-slate-700">Восстановление сайта</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 rounded-xl border border-slate-300 px-4 py-3 bg-white sm:col-span-2">
+                        {{ form.notify_timeout }}
+                        <span class="text-sm text-slate-700">Таймаут / недоступен</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-200 pt-5 space-y-4">
+                <label class="flex items-start gap-3">
+                    {{ form.is_active }}
+                    <div>
+                        <div class="font-medium text-slate-800">
+                            Включить email-уведомления
+                        </div>
+                        <div class="text-sm text-slate-500">
+                            Уведомления будут приходить на {{ request.user.email|default:"указанный email" }}
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <button type="submit"
+                        class="px-5 py-3 rounded-xl
+                               bg-gradient-to-r from-blue-500 to-violet-500
+                               text-white font-semibold shadow hover:shadow-lg transition">
+                    Сохранить
+                </button>
+
+                <a href="{% url 'notifications_index' %}"
+                   class="px-5 py-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition text-center">
+                    ← Назад к уведомлениям
+                </a>
+
+                {% if settings %}
+                <button type="submit" name="disconnect_email"
+                        class="px-5 py-3 rounded-xl bg-red-100 text-red-600 hover:bg-red-200 transition">
+                    Отключить email
+                </button>
+                {% endif %}
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

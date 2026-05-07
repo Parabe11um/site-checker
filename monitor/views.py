@@ -9,10 +9,10 @@ from django.utils import timezone
 from datetime import timedelta
 import datetime
 import pytz
-from .models import Site, UserSite, TelegramSettings
+from .models import Site, UserSite, TelegramSettings, EmailSettings
 from .forms import AddSiteForm
 from monitor.services import check_site
-from .forms import TelegramSettingsForm
+from .forms import TelegramSettingsForm, EmailSettingsForm
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from sitechecker.telegram import send_telegram
@@ -284,7 +284,10 @@ def telegram_settings_view(request):
 
         # 🔴 Отключить Telegram
         if "disconnect_telegram" in request.POST:
-            TelegramSettings.objects.filter(user=request.user).delete()
+            if settings_obj:
+                settings_obj.is_active = False
+                settings_obj.save(update_fields=["is_active"])
+
             messages.success(request, "Telegram-уведомления отключены")
             return redirect("telegram_settings")
 
@@ -331,3 +334,50 @@ def custom_logout(request):
     response.delete_cookie("sessionid")
     response.delete_cookie("csrftoken")
     return response
+
+# ======================================================
+#                УВЕДОМЛЕНИЯ
+# ======================================================
+@login_required
+def notifications_index_view(request):
+    tg = TelegramSettings.objects.filter(user=request.user).first()
+    email_settings = EmailSettings.objects.filter(user=request.user).first()
+
+    return render(request, "monitor/notifications/index.html", {
+        "tg": tg,
+        "email_settings": email_settings,
+    })
+
+@login_required
+def email_settings_view(request):
+    settings_obj = EmailSettings.objects.filter(user=request.user).first()
+
+    if request.method == "POST":
+
+        # Отключить email-уведомления
+        if "disconnect_email" in request.POST and settings_obj:
+            settings_obj.is_active = False
+            settings_obj.save(update_fields=["is_active"])
+            messages.success(request, "Email-уведомления отключены")
+            return redirect("email_settings")
+
+        form = EmailSettingsForm(request.POST, instance=settings_obj)
+
+        if form.is_valid():
+            email_settings = form.save(commit=False)
+            email_settings.user = request.user
+            email_settings.save()
+
+            messages.success(request, "Email-настройки сохранены")
+            return redirect("email_settings")
+    else:
+        form = EmailSettingsForm(instance=settings_obj)
+
+    return render(
+        request,
+        "monitor/notifications/email.html",
+        {
+            "form": form,
+            "settings": settings_obj,
+        }
+    )

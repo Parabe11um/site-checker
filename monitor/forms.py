@@ -1,6 +1,7 @@
 from django import forms
 from urllib.parse import urlparse
 from .models import TelegramSettings
+from .models import EmailSettings
 
 
 BASE_INPUT_CLASSES = (
@@ -75,3 +76,13 @@ class TelegramSettingsForm(forms.ModelForm):
                 "class": "border rounded px-3 py-2 w-full",
             }),
         }
+
+class EmailSettingsForm(forms.ModelForm):
+    class Meta:
+        model = EmailSettings
+        fields = [
+            "notify_down",
+            "notify_up",
+            "notify_timeout",
+            "is_active",
+        ]

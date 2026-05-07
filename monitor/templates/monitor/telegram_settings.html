@@ -7,43 +7,27 @@
 {% block content %}
 <div class="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 py-6">
 
-    <!-- 🟦 Карточка -->
-    <div class="bg-white/80 backdrop-blur-xl
-                border border-white/60
-                shadow-[0_30px_80px_-40px_rgba(30,64,175,0.25)]
-                rounded-3xl p-8">
+    <div class="
+        bg-white/80 backdrop-blur-xl
+        border border-white/60
+        shadow-[0_30px_80px_-40px_rgba(30,64,175,0.25)]
+        rounded-3xl p-8
+    ">
 
         <!-- HEADER -->
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-2xl font-semibold text-slate-900">
-                    Telegram-уведомления
-                </h1>
-                <p class="text-sm text-slate-500 mt-1">
-                    Уведомления о состоянии сайтов
-                </p>
-            </div>
-
-            <!-- STATUS BADGE -->
-            {% if settings.is_active and settings.token and settings.chat_id %}
-                <span class="inline-flex items-center gap-2
-                             px-4 py-2 rounded-full
-                             bg-green-100 text-green-700 text-sm font-medium">
-                    ● Telegram подключён
-                </span>
-            {% else %}
-                <span class="inline-flex items-center gap-2
-                             px-4 py-2 rounded-full
-                             bg-red-100 text-red-700 text-sm font-medium">
-                    ● Telegram не подключён
-                </span>
-            {% endif %}
+        <div class="mb-6">
+            <h1 class="text-2xl font-semibold text-slate-900">
+                Telegram-уведомления
+            </h1>
+            <p class="text-sm text-slate-500 mt-1">
+                Уведомления о состоянии сайтов
+            </p>
         </div>
 
         <form method="post" class="space-y-8">
             {% csrf_token %}
 
-            <!-- 🔐 BOT -->
+            <!-- BOT SETTINGS -->
             <div class="grid gap-6 sm:grid-cols-2">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">
@@ -66,34 +50,32 @@
                 </div>
             </div>
 
-            <!-- 🔔 TYPES -->
+            <!-- NOTIFICATION TYPES -->
             <div>
                 <h3 class="text-sm font-semibold text-slate-800 mb-3">
                     Типы уведомлений
                 </h3>
 
                 <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="flex items-center gap-3 bg-white rounded-xl p-3 border">
+                    <label class="flex items-center gap-3 bg-white rounded-xl p-3 border border-slate-200">
                         {{ form.notify_down }}
-                        <span class="text-sm">Падение сайта</span>
+                        <span class="text-sm text-slate-700">Падение сайта</span>
                     </label>
 
-                    <label class="flex items-center gap-3 bg-white rounded-xl p-3 border">
+                    <label class="flex items-center gap-3 bg-white rounded-xl p-3 border border-slate-200">
                         {{ form.notify_up }}
-                        <span class="text-sm">Восстановление сайта</span>
+                        <span class="text-sm text-slate-700">Восстановление сайта</span>
                     </label>
 
-                    <label class="flex items-center gap-3 bg-white rounded-xl p-3 border sm:col-span-2">
+                    <label class="flex items-center gap-3 bg-white rounded-xl p-3 border border-slate-200 sm:col-span-2">
                         {{ form.notify_timeout }}
-                        <span class="text-sm">Таймаут / недоступен</span>
+                        <span class="text-sm text-slate-700">Таймаут / недоступен</span>
                     </label>
                 </div>
             </div>
 
-            <!-- ⚙ ENABLE -->
-            <div class="border-t pt-6 space-y-4">
-
-                <!-- Telegram -->
+            <!-- ENABLE -->
+            <div class="border-t border-slate-200 pt-6">
                 <label class="flex items-start gap-3">
                     {{ form.is_active }}
                     <span class="font-medium text-slate-800">
@@ -103,48 +85,42 @@
                         </span>
                     </span>
                 </label>
-
-                <!-- Email -->
-                <label class="flex items-start gap-3">
-                    {{ form.email_enabled }}
-                    <span class="font-medium text-slate-800">
-                        Отправлять уведомления на email
-                        <span class="block text-xs text-slate-500 mt-0.5">
-                            {{ request.user.email|default:"Email не указан" }}
-                        </span>
-                    </span>
-                </label>
             </div>
 
-
             <!-- ACTIONS -->
-            <div class="pt-6 flex flex-wrap gap-3">
+            <div class="pt-2 flex flex-col sm:flex-row gap-3">
                 <button type="submit"
-                        class="inline-flex items-center justify-center
-                               px-6 py-3 rounded-2xl cursor-pointer
-                               text-white font-semibold
-                               bg-gradient-to-r from-blue-500 to-violet-500
-                               shadow-[0_18px_44px_-22px_rgba(59,130,246,0.85)]
-                               hover:-translate-y-0.5 transition">
+                        class="
+                            inline-flex items-center justify-center
+                            px-6 py-3 rounded-2xl cursor-pointer
+                            text-white font-semibold
+                            bg-gradient-to-r from-blue-500 to-violet-500
+                            shadow-[0_18px_44px_-22px_rgba(59,130,246,0.85)]
+                            hover:-translate-y-0.5 transition
+                        ">
                     Сохранить
                 </button>
 
-                <a href="{% url 'home' %}"
-                   class="inline-flex items-center justify-center
-                          px-6 py-3 rounded-2xl
-                          bg-slate-100 text-slate-700
-                          hover:bg-slate-200 transition">
-                    ← Назад к списку сайтов
+                <a href="{% url 'notifications_index' %}"
+                   class="
+                        inline-flex items-center justify-center
+                        px-6 py-3 rounded-2xl
+                        bg-slate-100 text-slate-700 font-medium
+                        hover:bg-slate-200 transition
+                   ">
+                    ← Назад к уведомлениям
                 </a>
 
-                {% if settings %}
+                {% if settings and settings.is_active %}
                     <button type="submit"
                             name="disconnect_telegram"
-                            onclick="return confirm('Отключить Telegram-уведомления? Все данные будут удалены.')"
-                            class="inline-flex items-center justify-center
-                                   px-6 py-3 rounded-2xl
-                                   bg-red-100 text-red-700 font-medium
-                                   hover:bg-red-200 transition cursor-pointer">
+                            onclick="return confirm('Отключить Telegram-уведомления? Данные формы сохранятся.')"
+                            class="
+                                inline-flex items-center justify-center
+                                px-6 py-3 rounded-2xl
+                                bg-red-100 text-red-700 font-medium
+                                hover:bg-red-200 transition cursor-pointer
+                            ">
                         Отключить Telegram
                     </button>
                 {% endif %}

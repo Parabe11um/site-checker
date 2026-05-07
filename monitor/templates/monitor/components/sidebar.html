@@ -1,0 +1,64 @@
+<aside
+  id="sidebar"
+  class="fixed inset-y-0 left-0 z-40
+         w-64 bg-white/80 backdrop-blur
+         border-r border-slate-200
+         transform transition-transform duration-300
+         -translate-x-full lg:translate-x-0
+         flex flex-col"
+>
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200">
+        <span class="font-semibold text-slate-900">
+            Site Checker
+        </span>
+
+        <!-- 🔘 КНОПКА СВЕРНУТЬ -->
+        <button
+            class="flex items-center justify-center w-8 h-8
+                   rounded-md text-slate-500 hover:bg-slate-100
+                   lg:hidden"
+            onclick="document.getElementById('sidebar').classList.add('-translate-x-full')"
+            title="Свернуть меню"
+        >
+            ✕
+        </button>
+
+    </div>
+
+    <!-- MENU -->
+    <nav class="flex-1 px-2 py-4 space-y-1 text-sm">
+        <a href="{% url 'home' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg
+                  text-slate-700 hover:bg-slate-100">
+            🏠 <span class="sidebar-text">Сайты</span>
+        </a>
+
+        <a href="{% url 'site_create' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg
+                  text-slate-700 hover:bg-slate-100">
+            ➕ <span class="sidebar-text">Добавить сайт</span>
+        </a>
+
+        <a href="{% url 'notifications_index' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg
+                  text-slate-700 hover:bg-slate-100">
+            🔔 <span class="sidebar-text">Уведомления</span>
+        </a>
+    </nav>
+
+    <!-- FOOTER -->
+    <div class="px-2 pb-4">
+        <a href="{% url 'logout' %}"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg
+                  text-red-600 hover:bg-red-50">
+            🚪 <span class="sidebar-text">Выйти</span>
+        </a>
+    </div>
+
+  <!-- COPYRIGHT -->
+    <div class="px-4 py-3 text-xs text-slate-400 border-t border-slate-200">
+      © {{ now|date:"Y" }} 4YW
+  </div>
+</aside>

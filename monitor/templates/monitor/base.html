@@ -10,9 +10,17 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="min-h-screen bg-slate-50">
-    <!-- мягкий градиентный фон, как на лендинге -->
-    <div class="min-h-screen relative overflow-hidden">
+<body class="bg-slate-50">
+
+<div class="flex min-h-screen relative overflow-hidden">
+
+    <!-- SIDEBAR -->
+    {% include "monitor/components/sidebar.html" %}
+
+    <!-- CONTENT AREA -->
+    <div class="flex-1 relative lg:ml-64">
+
+        <!-- мягкий градиентный фон -->
         <div class="pointer-events-none absolute inset-0">
             <div class="absolute -top-40 -left-40 h-[520px] w-[520px] rounded-full bg-purple-200/50 blur-3xl"></div>
             <div class="absolute top-10 right-0 h-[520px] w-[520px] rounded-full bg-sky-200/55 blur-3xl"></div>
@@ -24,13 +32,28 @@
             {% include "monitor/components/navbar.html" %}
 
             <main class="px-4 sm:px-6 lg:px-8 py-6">
-              <div class="mx-auto w-full max-w-7xl">
-                {% block content %}{% endblock %}
-              </div>
+                <div class="mx-auto w-full max-w-7xl">
+                    {% block content %}{% endblock %}
+                </div>
             </main>
 
             {% block scripts %}{% endblock %}
         </div>
+
     </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const sidebar = document.getElementById("sidebar");
+    const toggle = document.getElementById("sidebarToggle");
+
+    if (!sidebar || !toggle) return;
+
+    toggle.addEventListener("click", () => {
+        sidebar.classList.toggle("-translate-x-full");
+    });
+});
+</script>
 </body>
 </html>

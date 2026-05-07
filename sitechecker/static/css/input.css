@@ -87,3 +87,20 @@
 .animate-auth-3 { animation: authFadeUp 0.8s ease-out 1.0s forwards; }
 .animate-auth-4 { animation: authFadeUp 0.8s ease-out 1.4s forwards; }
 .animate-auth-5 { animation: authFadeUp 0.8s ease-out 1.8s forwards; }
+
+
+  .sidebar-collapsed {
+    width: 4rem !important; /* w-16 */
+  }
+
+  .sidebar-collapsed .sidebar-text,
+  .sidebar-collapsed .sidebar-title {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .sidebar-collapsed nav a {
+    justify-content: center;
+  }
