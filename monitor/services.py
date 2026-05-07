@@ -273,6 +273,7 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     site.last_checked_at = timezone.now()
     site.ip_address = ip_address
 
+
     # SSL
     site.ssl_valid_from = ssl_info["valid_from"]
     site.ssl_valid_to = ssl_info["valid_to"]
