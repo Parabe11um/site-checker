@@ -245,8 +245,17 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     # ------------ SSL CHECK ------------
     if curr == 0:
         ssl_info = {
-            "valid_from": None, "valid_to": None,
-            "days_left": None, "status": "Нет данных"
+            "valid_from": None,
+            "valid_to": None,
+            "days_left": None,
+            "status": "Нет данных",
+        }
+    elif not site.url.startswith("https://"):
+        ssl_info = {
+            "valid_from": None,
+            "valid_to": None,
+            "days_left": None,
+            "status": "NOT_HTTPS",
         }
     else:
         ssl_info = check_ssl_certificate(site.url)
