@@ -2,7 +2,7 @@ import textwrap
 import requests
 from requests.exceptions import RequestException
 from django.utils import timezone
-from monitor.models import Site, UserSite, TelegramSettings
+from monitor.models import Site, UserSite, TelegramSettings, EmailSettings
 from monitor.models_check import SiteCheck
 import ssl
 import socket
@@ -28,6 +28,90 @@ def extract_domain(url: str) -> str:
         return f"{ext.domain}.{ext.suffix}"
     return ext.registered_domain or url
 
+
+# -----------------------------
+#  ALERT RULES
+# -----------------------------
+ALERT_AFTER_FAILED_CHECKS = 2
+
+
+def is_success_status(code) -> bool:
+    """
+    Успешным считаем только 2xx.
+    3xx / 4xx / 5xx / 0 считаем проблемой.
+    """
+    return code is not None and 200 <= int(code) < 300
+
+
+def is_problem_status(code) -> bool:
+    return not is_success_status(code)
+
+
+def count_previous_problem_checks(site: Site, limit: int = 10) -> int:
+    """
+    Считает, сколько последних проверок подряд были проблемными.
+    Важно: текущая проверка еще не записана в SiteCheck,
+    поэтому считаем только историю ДО текущей проверки.
+    """
+    count = 0
+
+    for check in site.checks.order_by("-checked_at")[:limit]:
+        if is_problem_status(check.status_code):
+            count += 1
+        else:
+            break
+
+    return count
+
+
+def get_problem_title_and_subject(status_code) -> tuple[str, str]:
+    if status_code == 0:
+        return "⚠️ Таймаут запроса", "Таймаут запроса"
+
+    if 300 <= status_code < 400:
+        return "⚠️ Редирект сайта", "Редирект сайта"
+
+    if 400 <= status_code < 500:
+        return "⚠️ Ошибка сайта 4xx", "Ошибка сайта 4xx"
+
+    if 500 <= status_code < 600:
+        return "🚨 Ошибка сайта 5xx", "Ошибка сайта 5xx"
+
+    return "⚠️ Проблема с сайтом", "Проблема с сайтом"
+
+
+def format_error_message(
+    *,
+    title: str,
+    site_name: str,
+    url: str,
+    status_code=None,
+    response_time=None,
+    error_text=None,
+    snippet=None,
+) -> str:
+    lines = [
+        title,
+        "",
+        site_name,
+        url,
+    ]
+
+    if status_code is not None:
+        lines.append(f"HTTP статус: {status_code}")
+
+    if response_time is not None:
+        lines.append(f"Время отклика: {response_time:.2f} c")
+
+    if error_text:
+        lines.append(f"Ошибка: {error_text}")
+
+    if snippet:
+        lines.append("")
+        lines.append("Фрагмент ответа:")
+        lines.append(textwrap.shorten(snippet, width=500, placeholder=" ..."))
+
+    return "\n".join(lines)
 
 # -----------------------------
 #  CHECK DOMAIN EXPIRATION
@@ -93,13 +177,13 @@ def check_domain_expiration(url: str) -> dict:
             "raw": data,
         }
 
-    except Exception as e:
+    except Exception:
         return {
             "expiration": None,
             "days_left": None,
-            "status": f"ERROR: {e}",
+            "status": "ERROR",
+            "raw": "",
         }
-
 
 # -----------------------------
 #  CHECK SSL
@@ -124,19 +208,18 @@ def check_ssl_certificate(url: str) -> dict:
             "status": "OK" if days_left > 0 else "EXPIRED",
         }
 
-    except Exception as e:
+    except Exception:
         return {
             "valid_from": None,
             "valid_to": None,
             "days_left": None,
-            "status": f"ERROR: {e}",
+            "status": "ERROR",
         }
-
 
 # -----------------------------
 #  MAIN WEBSITE CHECK
 # -----------------------------
-def check_site(site: Site, timeout: float = 30.0) -> Site:
+def check_site(site: Site, timeout: float = 60.0) -> Site:
     status_code = None
     response_time = None
     snippet = ""
@@ -159,16 +242,23 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
         response = requests.get(
             site.url,
             timeout=(10, timeout),
+            allow_redirects=False,
             headers={
                 "User-Agent": "Mozilla/5.0 (compatible; CheckyWebMonitor/1.0)"
             }
         )
+
         status_code = response.status_code
         response_time = response.elapsed.total_seconds()
         snippet = textwrap.shorten(response.text, width=2000, placeholder=" ...")
 
-        if status_code >= 400:
+        if status_code >= 300:
             error_text = response.reason or f"HTTP {status_code}"
+
+            if 300 <= status_code < 400:
+                location = response.headers.get("Location")
+                if location:
+                    error_text = f"{error_text}. Location: {location}"
 
     except RequestException as e:
         status_code = 0
@@ -180,72 +270,79 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     if prev is None:
         prev = 200
 
-    if prev != curr:
-        subscriptions = UserSite.objects.filter(site=site, notify_enabled=True)
+    # Сколько проблемных проверок подряд было ДО текущей проверки
+    previous_problem_count = count_previous_problem_checks(site)
+
+    # Сколько проблемных проверок подряд будет С УЧЕТОМ текущей
+    current_problem_count = (
+        previous_problem_count + 1
+        if is_problem_status(curr)
+        else 0
+    )
+
+    # Ошибку отправляем только на 2-й подряд проблемной проверке
+    should_send_problem_alert = (
+        is_problem_status(curr)
+        and current_problem_count == ALERT_AFTER_FAILED_CHECKS
+    )
+
+    # Восстановление отправляем только после подтвержденной проблемы,
+    # то есть когда до текущей успешной проверки было 2+ ошибок подряд
+    should_send_recovery_alert = (
+        is_success_status(curr)
+        and previous_problem_count >= ALERT_AFTER_FAILED_CHECKS
+    )
+
+    if should_send_problem_alert or should_send_recovery_alert:
+        subscriptions = UserSite.objects.filter(
+            site=site,
+            notify_enabled=True
+        ).select_related("user")
+
+        sent_user_ids = set()
 
         for sub in subscriptions:
             user = sub.user
-            name = sub.name or site.url
 
-            tg = getattr(user, "telegram_settings", None)
-
-            if not tg or not tg.is_active:
+            # Защита от дублей, если у одного пользователя вдруг несколько связей с сайтом
+            if user.id in sent_user_ids:
                 continue
 
-            # 🔴 Падение сайта
-            if prev == 200 and curr >= 500 and tg.notify_down:
+            sent_user_ids.add(user.id)
+
+            name = sub.name or site.url
+
+            if should_send_problem_alert:
+                title, subject = get_problem_title_and_subject(curr)
+
+                event_type = "timeout" if curr == 0 else "down"
+
                 notify_user(
                     user=user,
-                    subject="🚨 Сайт упал",
-                    message=(
-                        f"🚨 Сайт упал\n"
-                        f"{name}\n"
-                        f"{site.url}\n\n"
-                        f"HTTP: {curr}\n"
-                        f"Ошибка: {error_text}"
-                    )
+                    subject=subject,
+                    message=format_error_message(
+                        title=title,
+                        site_name=name,
+                        url=site.url,
+                        status_code=curr,
+                        response_time=response_time,
+                        error_text=error_text,
+                        snippet=snippet,
+                    ),
+                    event_type=event_type,
                 )
 
-            # ⚠️ Клиентская ошибка (4xx)
-            elif prev == 200 and 400 <= curr < 500 and tg.notify_down:
-                notify_user(
-                    user=user,
-                    subject="⚠️ Ошибка доступа к сайту",
-                    message=(
-                        f"⚠️ Ошибка {curr}\n"
-                        f"{name}\n"
-                        f"{site.url}\n\n"
-                        f"Причина: {error_text}"
-                    )
-                )
-
-            # 🟢 Восстановление после падения
-            elif prev >= 500 and curr == 200 and tg.notify_up:
+            elif should_send_recovery_alert:
                 notify_user(
                     user=user,
                     subject="✅ Сайт восстановлен",
-                    message=f"✅ Сайт восстановлен\n{name}"
-                )
-
-            # ⚠️ Таймаут
-            elif curr == 0 and prev not in (0, None) and tg.notify_timeout:
-                notify_user(
-                    user=user,
-                    subject="⚠️ Таймаут",
                     message=(
-                        f"⚠️ Таймаут\n"
+                        "✅ Сайт восстановлен\n\n"
                         f"{name}\n"
-                        f"{site.url}\n\n"
-                        f"Ошибка: {error_text}"
-                    )
-                )
-
-            # 🟢 Восстановление после таймаута
-            elif prev == 0 and curr == 200 and tg.notify_up:
-                notify_user(
-                    user=user,
-                    subject="✅ Сайт восстановился",
-                    message=f"✅ Сайт восстановился\n{name}"
+                        f"{site.url}\n"
+                        f"HTTP статус: {curr}"
+                    ),
+                    event_type="up",
                 )
 
     # ------------ SSL CHECK ------------
@@ -335,21 +432,40 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
 
     return site
 
-def notify_user(user, subject: str, message: str):
+def notify_user(user, subject: str, message: str, event_type: str = "down"):
     """
     Унифицированная отправка уведомлений:
-    - Telegram (если включён)
-    - Email (если включён)
+    - Telegram, если канал включён и разрешён тип уведомления
+    - Email, если канал включён и разрешён тип уведомления
     """
 
-    tg = getattr(user, "telegram_settings", None)
+    flag_map = {
+        "down": "notify_down",
+        "timeout": "notify_timeout",
+        "up": "notify_up",
+    }
+
+    flag_name = flag_map.get(event_type, "notify_down")
 
     # --- TELEGRAM ---
-    if tg and tg.is_active:
+    tg = getattr(user, "telegram_settings", None)
+
+    if (
+        tg
+        and tg.is_active
+        and getattr(tg, flag_name, False)
+    ):
         send_telegram(user, message)
 
     # --- EMAIL ---
-    if getattr(user, "email", None):
+    email_settings = EmailSettings.objects.filter(user=user).first()
+
+    if (
+        email_settings
+        and email_settings.is_active
+        and getattr(email_settings, flag_name, False)
+        and getattr(user, "email", None)
+    ):
         send_mail(
             subject=subject,
             message=message,
