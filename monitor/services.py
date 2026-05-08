@@ -156,7 +156,13 @@ def check_site(site: Site, timeout: float = 30.0) -> Site:
     ip_changed = ip_address is not None and ip_address != old_ip
 
     try:
-        response = requests.get(site.url, timeout=timeout)
+        response = requests.get(
+            site.url,
+            timeout=(10, timeout),
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; CheckyWebMonitor/1.0)"
+            }
+        )
         status_code = response.status_code
         response_time = response.elapsed.total_seconds()
         snippet = textwrap.shorten(response.text, width=2000, placeholder=" ...")
