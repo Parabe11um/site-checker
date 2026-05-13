@@ -11,6 +11,7 @@ from .views import (
     site_edit,
     site_delete,
     telegram_settings_view,
+    dashboard_sites_api,
 )
 
 urlpatterns = [
@@ -21,6 +22,7 @@ urlpatterns = [
     path("site/<int:pk>/response-data/", response_time_api, name="response_time_api"),
 
     path("dashboard/status/", dashboard_status_api, name="dashboard_status_api"),
+    path("dashboard/sites-data/", dashboard_sites_api, name="dashboard_sites_api"),
 
     path("my-sites/add/", site_create, name="site_create"),
     path("my-sites/<int:pk>/edit/", site_edit, name="site_edit"),

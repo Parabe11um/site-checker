@@ -19,6 +19,7 @@ from sitechecker.telegram import send_telegram
 from urllib.parse import urlparse
 from django.db.models import Avg
 from statistics import median
+from django.urls import reverse
 
 
 # ======================================================
@@ -196,6 +197,79 @@ def dashboard_status_api(request):
         "now": now.isoformat(),
     })
 
+
+@login_required
+def dashboard_sites_api(request):
+    user_sites = (
+        UserSite.objects
+        .select_related("site")
+        .filter(user=request.user)
+        .order_by("site__id")
+    )
+
+    rows = []
+
+    ok_count = 0
+    warn_count = 0
+    error_count = 0
+
+    for us in user_sites:
+        site = us.site
+
+        status_code = site.last_status_code
+
+        if status_code is not None and 200 <= int(status_code) < 300:
+            ok_count += 1
+        elif status_code is not None and 300 <= int(status_code) < 500:
+            warn_count += 1
+        else:
+            error_count += 1
+
+        last_checked = ""
+        if site.last_checked_at:
+            last_checked = timezone.localtime(site.last_checked_at).strftime("%d.%m.%Y %H:%M")
+
+        response_time = ""
+        if site.last_response_time is not None:
+            response_time = f"{site.last_response_time:.2f} с"
+
+        median_response_time = ""
+        if site.median_response_time is not None:
+            median_response_time = f"med {site.median_response_time:.2f}"
+
+        ssl_text = site.ssl_status or "Нет данных"
+
+        if site.ssl_status == "OK" and site.ssl_days_left is not None:
+            ssl_text = f"OK ({site.ssl_days_left} д.)"
+
+        domain_text = ""
+        if site.domain_days_left is not None:
+            domain_text = str(site.domain_days_left)
+
+        rows.append({
+            "id": site.id,
+            "name": us.name or site.url,
+            "url": site.url,
+            "status_code": status_code,
+            "response_time": response_time,
+            "median_response_time": median_response_time,
+            "ssl": ssl_text,
+            "domain": domain_text,
+            "last_checked_at": last_checked,
+            "check_url": reverse("site_check_now", args=[site.id]),
+            "detail_url": reverse("site_detail", args=[site.id]),
+            "delete_url": reverse("site_delete", args=[site.id]),
+        })
+
+    return JsonResponse({
+        "stats": {
+            "ok": ok_count,
+            "warn": warn_count,
+            "error": error_count,
+            "total": user_sites.count(),
+        },
+        "rows": rows,
+    })
 
 
 # ======================================================
