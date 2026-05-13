@@ -1,6 +1,12 @@
 function attachCheckHandlers() {
     document.querySelectorAll(".check-btn").forEach(btn => {
 
+        if (btn.dataset.bound === "1") {
+            return;
+        }
+
+        btn.dataset.bound = "1";
+
         btn.addEventListener("click", function (event) {
             event.preventDefault();
 
@@ -24,69 +30,162 @@ function attachCheckHandlers() {
                 headers: { "X-Requested-With": "XMLHttpRequest" }
             })
             .then(response => response.json())
-            .then(data => {
-
-                const statusEl = row.querySelector(".status-code");
-                const timeEl = row.querySelector(".response-time");
-
-                if (statusEl) statusEl.innerText = data.status;
-                if (timeEl) timeEl.innerText = data.response_time + " c";
-
-                // Подсветка строки
+            .then(() => {
                 row.classList.add("bg-green-100");
                 setTimeout(() => row.classList.remove("bg-green-100"), 1500);
 
                 button.innerHTML = "Готово";
+
+                refreshDashboard();
+
                 setTimeout(() => {
                     button.innerHTML = "Проверить";
                     button.classList.remove("opacity-50", "pointer-events-none");
                 }, 2000);
             })
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error(err);
+                button.innerHTML = "Ошибка";
+                button.classList.remove("opacity-50", "pointer-events-none");
+            });
         });
 
     });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+
+function renderStats(stats) {
+    const okEl = document.getElementById("stat-ok") || document.getElementById("count-ok");
+    const warnEl = document.getElementById("stat-warn") || document.getElementById("count-warn");
+    const errEl = document.getElementById("stat-error") || document.getElementById("count-err");
+
+    if (okEl) okEl.innerText = stats.ok ?? 0;
+    if (warnEl) warnEl.innerText = stats.warn ?? 0;
+    if (errEl) errEl.innerText = stats.error ?? stats.err ?? 0;
+}
+
+
+function getStatusClass(statusCode) {
+    statusCode = Number(statusCode);
+
+    if (statusCode >= 200 && statusCode < 300) {
+        return "text-emerald-600";
+    }
+
+    if (statusCode >= 300 && statusCode < 500) {
+        return "text-amber-600";
+    }
+
+    return "text-rose-600";
+}
+
+
+function escapeHtml(value) {
+    if (value === null || value === undefined) {
+        return "";
+    }
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+function renderRows(rows) {
+    const tbody = document.getElementById("site-table-body");
+
+    if (!tbody) {
+        return;
+    }
+
+    tbody.innerHTML = rows.map(row => {
+        const statusClass = getStatusClass(row.status_code);
+
+        return `
+            <tr class="hover:bg-slate-50/80 transition">
+                <td class="px-4 py-4">
+                    <div class="font-medium text-slate-900">${escapeHtml(row.name)}</div>
+                    <div class="text-xs text-slate-500">${escapeHtml(row.url)}</div>
+                </td>
+
+                <td class="px-4 py-4 text-center">
+                    <span class="status-code font-semibold ${statusClass}">
+                        ${escapeHtml(row.status_code)}
+                    </span>
+                </td>
+
+                <td class="px-4 py-4 text-center text-slate-700">
+                    <span class="response-time">${escapeHtml(row.response_time)}</span>
+                    ${row.median_response_time ? `<div class="text-xs text-slate-400">${escapeHtml(row.median_response_time)}</div>` : ""}
+                </td>
+
+                <td class="px-4 py-4 text-center text-slate-700">
+                    ${escapeHtml(row.ssl)}
+                </td>
+
+                <td class="px-4 py-4 text-center text-slate-700">
+                    ${escapeHtml(row.domain)}
+                </td>
+
+                <td class="px-4 py-4 text-center text-slate-500 text-sm">
+                    ${escapeHtml(row.last_checked_at)}
+                </td>
+
+                <td class="px-4 py-4 text-right">
+                    <a href="${escapeHtml(row.check_url)}"
+                       class="check-btn inline-flex items-center justify-center px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition">
+                        Проверить
+                    </a>
+                </td>
+
+                <td class="px-4 py-4 text-right">
+                    <a href="${escapeHtml(row.detail_url)}"
+                       class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm hover:bg-slate-200 transition">
+                        Подробнее
+                    </a>
+                </td>
+
+                <td class="px-4 py-4 text-right">
+                    <a href="${escapeHtml(row.delete_url)}"
+                       onclick="return confirm('Удалить сайт из мониторинга?')"
+                       class="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm hover:bg-red-100 transition">
+                        Удалить
+                    </a>
+                </td>
+            </tr>
+        `;
+    }).join("");
 
     attachCheckHandlers();
-
-    // ---- Автообновление dashboard ----
-    setInterval(() => {
-        fetch("/dashboard/status/")
-            .then(r => r.json())
-            .then(data => {
-
-                const okEl = document.getElementById("count-ok");
-                const warnEl = document.getElementById("count-warn");
-                const errEl = document.getElementById("count-err");
-
-                if (okEl) okEl.innerText = data.counts.ok;
-                if (warnEl) warnEl.innerText = data.counts.warn;
-                if (errEl) errEl.innerText = data.counts.err;
-
-            })
-            .catch(() => {});
-    }, 10000);
+}
 
 
-    // ---- Автообновление таблицы ----
-    setInterval(() => {
-        fetch("/")
-            .then(r => r.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, "text/html");
+async function refreshDashboard() {
+    try {
+        const response = await fetch("/dashboard/sites-data/", {
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
 
-                const newBodyWrapper = doc.querySelector("#site-table-body");
-                const bodyWrapper = document.querySelector("#site-table-body");
+        const data = await response.json();
 
-                if (newBodyWrapper && bodyWrapper) {
-                    bodyWrapper.innerHTML = newBodyWrapper.innerHTML;
-                    attachCheckHandlers();
-                }
-            })
-            .catch(() => {});
-    }, 60000);
+        renderStats(data.stats);
+        renderRows(data.rows);
+
+    } catch (error) {
+        console.error("Ошибка обновления dashboard:", error);
+    }
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    attachCheckHandlers();
+
+    refreshDashboard();
+
+    setInterval(refreshDashboard, 30000);
 });

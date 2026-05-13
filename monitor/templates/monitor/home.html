@@ -71,7 +71,7 @@
             </tr>
             </thead>
 
-            <tbody class="divide-y divide-slate-200/70">
+            <tbody id="site-table-body" class="divide-y divide-slate-200/70">
             {% for site in sites %}
             {% if site.last_status_code < 300 %}
             {% with "text-emerald-600" as status_color %}
@@ -99,4 +99,209 @@
 
 {% block scripts %}
 <script src="{% static 'js/script.js' %}"></script>
+
+<script>
+    const sitesDataUrl = "{% url 'dashboard_sites_api' %}";
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return "";
+        }
+
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(";") : [];
+
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+
+            if (cookie.startsWith(name + "=")) {
+                return decodeURIComponent(cookie.substring(name.length + 1));
+            }
+        }
+
+        return "";
+    }
+
+    function getStatusClass(statusCode) {
+        const code = Number(statusCode);
+
+        if (code >= 200 && code < 300) {
+            return "text-emerald-600 font-semibold";
+        }
+
+        if (code >= 300 && code < 500) {
+            return "text-amber-600 font-semibold";
+        }
+
+        return "text-rose-600 font-semibold";
+    }
+
+    function getSslClass(sslText) {
+        if (!sslText) {
+            return "text-slate-400";
+        }
+
+        if (sslText.startsWith("OK")) {
+            return "text-emerald-600 font-semibold";
+        }
+
+        if (sslText.includes("NOT_HTTPS") || sslText.includes("ERROR") || sslText.includes("EXPIRED")) {
+            return "text-rose-600 font-semibold";
+        }
+
+        return "text-slate-500";
+    }
+
+    function renderStats(stats) {
+        const ok = document.getElementById("stat-ok");
+        const warn = document.getElementById("stat-warn");
+        const error = document.getElementById("stat-error");
+
+        if (ok) ok.textContent = stats.ok ?? 0;
+        if (warn) warn.textContent = stats.warn ?? 0;
+        if (error) error.textContent = stats.error ?? 0;
+    }
+
+    function renderRows(rows) {
+        const tbody = document.getElementById("sites-table-body");
+
+        if (!tbody) {
+            return;
+        }
+
+        if (!rows.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="px-6 py-8 text-center text-slate-400">
+                        Сайтов пока нет
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = rows.map(row => `
+            <tr class="hover:bg-slate-50/70 transition" data-site-id="${row.id}">
+                <td class="px-4 py-4 font-semibold text-slate-800">
+                    ${escapeHtml(row.name)}
+                </td>
+
+                <td class="px-4 py-4 text-center ${getStatusClass(row.status_code)}">
+                    ${escapeHtml(row.status_code)}
+                </td>
+
+                <td class="px-4 py-4 text-center text-slate-600">
+                    <div>${escapeHtml(row.response_time)}</div>
+                    <div class="text-xs text-slate-400">${escapeHtml(row.median_response_time)}</div>
+                </td>
+
+                <td class="px-4 py-4 text-center ${getSslClass(row.ssl)}">
+                    ${escapeHtml(row.ssl)}
+                </td>
+
+                <td class="px-4 py-4 text-center text-emerald-600 font-semibold">
+                    ${escapeHtml(row.domain)}
+                </td>
+
+                <td class="px-4 py-4 text-center text-slate-500">
+                    ${escapeHtml(row.last_checked_at)}
+                </td>
+
+                <td class="px-4 py-4 text-right">
+                    <button
+                        type="button"
+                        class="js-check-site inline-flex items-center justify-center px-4 py-2 rounded-xl text-white text-sm font-semibold bg-gradient-to-r from-blue-500 to-violet-500 hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-wait"
+                        data-check-url="${escapeHtml(row.check_url)}"
+                    >
+                        Проверить
+                    </button>
+                </td>
+
+                <td class="px-4 py-4 text-right">
+                    <a href="${escapeHtml(row.detail_url)}"
+                       class="text-blue-600 font-medium hover:underline">
+                        Открыть →
+                    </a>
+                </td>
+
+                <td class="px-4 py-4 text-right">
+                    <a href="${escapeHtml(row.delete_url)}"
+                       onclick="return confirm('Удалить сайт из мониторинга?')"
+                       class="text-rose-600 font-medium hover:underline">
+                        Удалить
+                    </a>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    async function refreshDashboard() {
+        try {
+            const response = await fetch(sitesDataUrl, {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                cache: "no-store"
+            });
+
+            if (!response.ok) {
+                console.error("Dashboard refresh failed:", response.status);
+                return;
+            }
+
+            const data = await response.json();
+
+            renderStats(data.stats);
+            renderRows(data.rows);
+        } catch (error) {
+            console.error("Dashboard refresh error:", error);
+        }
+    }
+
+    document.addEventListener("click", async function (event) {
+        const button = event.target.closest(".js-check-site");
+
+        if (!button) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const checkUrl = button.dataset.checkUrl;
+        const oldText = button.textContent;
+
+        button.disabled = true;
+        button.textContent = "Проверяем...";
+
+        try {
+            await fetch(checkUrl, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+
+            await refreshDashboard();
+        } catch (error) {
+            console.error("Site check error:", error);
+        } finally {
+            button.disabled = false;
+            button.textContent = oldText;
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        refreshDashboard();
+        setInterval(refreshDashboard, 30000);
+    });
+</script>
 {% endblock %}
