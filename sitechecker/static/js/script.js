@@ -168,8 +168,14 @@ async function refreshDashboard() {
         const response = await fetch("/dashboard/sites-data/", {
             headers: {
                 "X-Requested-With": "XMLHttpRequest"
-            }
+            },
+            cache: "no-store"
         });
+
+        if (!response.ok) {
+            console.error("Dashboard refresh failed:", response.status);
+            return;
+        }
 
         const data = await response.json();
 
