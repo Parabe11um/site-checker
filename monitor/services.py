@@ -23,6 +23,15 @@ urllib3_connection.HAS_IPV6 = False
 import requests
 from requests.exceptions import RequestException
 
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Avg
+
+from monitor.models import Site, UserSite, TelegramSettings, EmailSettings
+from monitor.models_check import SiteCheck
+from sitechecker.telegram import send_telegram
+
 # -----------------------------
 #  EXTRACT ROOT DOMAIN
 # -----------------------------
