@@ -1,23 +1,27 @@
 import textwrap
-import requests
-from requests.exceptions import RequestException
-from django.utils import timezone
-from monitor.models import Site, UserSite, TelegramSettings, EmailSettings
-from monitor.models_check import SiteCheck
 import ssl
 import socket
-from datetime import datetime
-import pytz
-from sitechecker.telegram import send_telegram
-import tldextract
 import subprocess
 import re
-from django.core.mail import send_mail
-from django.conf import settings
-from urllib.parse import urlparse
-from datetime import timedelta
-from django.db.models import Avg
+
+from datetime import datetime, timedelta
 from statistics import median
+from urllib.parse import urlparse
+
+import pytz
+import tldextract
+import urllib3.util.connection as urllib3_connection
+
+
+def force_ipv4():
+    return socket.AF_INET
+
+
+urllib3_connection.allowed_gai_family = force_ipv4
+urllib3_connection.HAS_IPV6 = False
+
+import requests
+from requests.exceptions import RequestException
 
 # -----------------------------
 #  EXTRACT ROOT DOMAIN
@@ -189,16 +193,43 @@ def check_domain_expiration(url: str) -> dict:
 #  CHECK SSL
 # -----------------------------
 def check_ssl_certificate(url: str) -> dict:
-    hostname = url.replace("https://", "").replace("http://", "").split("/")[0]
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+
+    if not hostname:
+        return {
+            "valid_from": None,
+            "valid_to": None,
+            "days_left": None,
+            "status": "ERROR",
+        }
+
+    try:
+        hostname_idna = hostname.encode("idna").decode("ascii")
+    except Exception:
+        hostname_idna = hostname
+
     ctx = ssl.create_default_context()
 
     try:
-        with socket.create_connection((hostname, 443), timeout=5) as sock:
-            with ctx.wrap_socket(sock, server_hostname=hostname) as ssock:
+        # Принудительно получаем IPv4
+        ip_address = socket.gethostbyname(hostname_idna)
+
+        # Подключаемся к IPv4, но SNI оставляем по домену
+        with socket.create_connection((ip_address, 443), timeout=10) as sock:
+            with ctx.wrap_socket(sock, server_hostname=hostname_idna) as ssock:
                 cert = ssock.getpeercert()
 
-        valid_from = datetime.strptime(cert["notBefore"], "%b %d %H:%M:%S %Y %Z").replace(tzinfo=pytz.UTC)
-        valid_to = datetime.strptime(cert["notAfter"], "%b %d %H:%M:%S %Y %Z").replace(tzinfo=pytz.UTC)
+        valid_from = datetime.strptime(
+            cert["notBefore"],
+            "%b %d %H:%M:%S %Y %Z"
+        ).replace(tzinfo=pytz.UTC)
+
+        valid_to = datetime.strptime(
+            cert["notAfter"],
+            "%b %d %H:%M:%S %Y %Z"
+        ).replace(tzinfo=pytz.UTC)
+
         days_left = (valid_to - datetime.now(pytz.UTC)).days
 
         return {
@@ -208,7 +239,7 @@ def check_ssl_certificate(url: str) -> dict:
             "status": "OK" if days_left > 0 else "EXPIRED",
         }
 
-    except Exception:
+    except Exception as e:
         return {
             "valid_from": None,
             "valid_to": None,
@@ -219,7 +250,7 @@ def check_ssl_certificate(url: str) -> dict:
 # -----------------------------
 #  MAIN WEBSITE CHECK
 # -----------------------------
-def check_site(site: Site, timeout: float = 60.0) -> Site:
+def check_site(site: Site, timeout: float = 25.0) -> Site:
     status_code = None
     response_time = None
     snippet = ""
@@ -241,7 +272,7 @@ def check_site(site: Site, timeout: float = 60.0) -> Site:
     try:
         response = requests.get(
             site.url,
-            timeout=(10, timeout),
+            timeout=(7, timeout),
             allow_redirects=False,
             headers={
                 "User-Agent": "Mozilla/5.0 (compatible; CheckyWebMonitor/1.0)"
